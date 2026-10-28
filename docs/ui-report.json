@@ -1,0 +1,42 @@
+{
+  "passed": 8,
+  "checks": [
+    "desktop shell loads and connects to the backend",
+    "create demo, complete four stages, and render real source diff",
+    "switch files, test output, and persisted execution events",
+    "search task history and open a persisted task",
+    "guide, real-model upload/remove controls, and missing-model setup",
+    "connection failure and retry without losing the page",
+    "390px responsive layout and mobile navigation",
+    "no uncaught browser JavaScript errors"
+  ],
+  "errors": [],
+  "desktopLayout": {
+    "width": 1440,
+    "scrollWidth": 1425,
+    "heading": {
+      "x": 256,
+      "y": 104.390625,
+      "width": 209,
+      "height": 44.546875,
+      "top": 104.390625,
+      "right": 465,
+      "bottom": 148.9375,
+      "left": 256
+    },
+    "inspector": {
+      "x": 682.3125,
+      "y": 817.765625,
+      "width": 708.671875,
+      "height": 279.59375,
+      "top": 817.765625,
+      "right": 1390.984375,
+      "bottom": 1097.359375,
+      "left": 682.3125
+    }
+  },
+  "mobileLayout": {
+    "width": 390,
+    "scrollWidth": 375
+  }
+}

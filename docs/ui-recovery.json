@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "scenario": "resume_after_effect_with_delayed_event_history",
+  "task_id": "4e53a52ee3374d3ebdc3c3b57f5c27f2",
+  "status": "succeeded",
+  "metrics": {
+    "tool_calls": 3,
+    "tool_execution_attempts": 3,
+    "reused_results": 1,
+    "file_write_attempts": 1
+  },
+  "errors": []
+}

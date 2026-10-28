@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.env
+.workbench/
+artifacts/
+upstream/
+upstream-*.zip
+upstream-*.tar.gz
+*.egg-info/
+node_modules/
+dist/
+

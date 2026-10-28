@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#102b2b">
+  <meta name="description" content="提交代码修复任务，实时追踪每一步执行，检查代码差异与测试结果。">
+  <title>Harness Studio · Agent 工作台</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/styles.css?v=2">
+  <script src="/assets/app.js?v=2" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳转到主要内容</a>
+  <aside class="sidebar" id="sidebar" aria-label="主导航">
+    <a class="brand" href="#main" aria-label="Harness Studio 工作台">
+      <span class="brand-mark" data-icon="layers"></span>
+      <span>Harness<span class="brand-sub">STUDIO</span></span>
+    </a>
+    <button class="workspace-switch" id="workspace-info"><span class="workspace-avatar">H</span><span>个人工作空间<small>Local workspace</small></span><span data-icon="info" class="muted-icon"></span></button>
+    <div class="nav-label">WORKSPACE</div>
+    <nav>
+      <button class="nav-item active" data-view="workspace" aria-current="page"><span data-icon="grid"></span>工作台<span class="nav-shortcut">⌘ 1</span></button>
+      <button class="nav-item" data-view="history"><span data-icon="history"></span>任务记录<span class="nav-count" id="nav-count">0</span></button>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="nav-item" id="settings-nav"><span data-icon="settings"></span>模型连接</button>
+      <a class="nav-item" href="/docs" target="_blank" rel="noopener"><span data-icon="book"></span>API 文档<span data-icon="external" class="nav-external"></span></a>
+      <div class="sidebar-note"><span class="note-orbit" data-icon="shield"></span><strong>让执行过程可追溯</strong><p>每一步行动都被记录，<br>每一次完成都有据可查。</p><span class="sidebar-version">HARNESS WORKBENCH / 0.1</span></div>
+      <div class="sidebar-user"><span class="user-avatar">ME</span><span>本地开发者<small><i class="dot"></i> 本地工作空间</small></span></div>
+    </div>
+  </aside>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="breadcrumb"><button class="icon-button mobile-menu" id="menu-toggle" aria-label="展开导航"><span data-icon="menu"></span></button><span data-icon="panel"></span><span>工作空间</span><span class="crumb-divider">/</span><strong id="breadcrumb-current">任务工作台</strong></div>
+      <div class="topbar-actions"><span class="connection" id="connection-status"><i class="dot"></i><span>连接中</span></span><span class="topbar-divider"></span><button class="icon-button" id="refresh-button" aria-label="刷新任务" title="刷新任务"><span data-icon="refresh"></span></button><span class="top-avatar">ME</span></div>
+    </header>
+    <main id="main">
+      <div class="connection-banner" id="connection-banner" role="alert" hidden>暂时无法连接服务。正在尝试重新连接…<button id="retry-connection">立即重试</button></div>
+      <section class="page-heading">
+        <div><div class="eyebrow"><span class="tiny-line"></span> AGENT OPERATIONS</div><h1 id="page-title">任务工作台<span class="heading-dot">.</span></h1><p id="page-description">从问题到修复，让每一步执行都有迹可循。</p></div>
+        <div class="heading-actions"><button class="button secondary" id="guide-button"><span data-icon="play-circle"></span>使用指南</button><button class="button primary" id="new-task-button"><span data-icon="plus"></span>新建任务</button></div>
+      </section>
+
+      <section class="stats-grid" aria-label="任务概览">
+        <div class="stat-card"><div class="stat-top"><span>全部任务</span><span class="stat-icon gray" data-icon="stack"></span></div><div class="stat-value" id="stat-total">—</div><div class="stat-caption">保存在当前工作空间</div></div>
+        <div class="stat-card"><div class="stat-top"><span>已验证完成</span><span class="stat-icon green" data-icon="check-circle"></span></div><div class="stat-value" id="stat-completed">—</div><div class="stat-caption"><span class="small-dot green-dot"></span> 测试通过且代码状态一致</div></div>
+        <div class="stat-card"><div class="stat-top"><span>正在执行</span><span class="stat-icon blue" data-icon="activity"></span></div><div class="stat-value" id="stat-running">—</div><div class="stat-caption">当前运行或排队中的任务</div></div>
+        <div class="stat-card"><div class="stat-top"><span>需要关注</span><span class="stat-icon amber" data-icon="flag"></span></div><div class="stat-value" id="stat-attention">—</div><div class="stat-caption">失败、中断或等待处理</div></div>
+      </section>
+
+      <div class="workspace-grid" id="workspace-view">
+        <section class="panel composer-panel" id="composer" aria-labelledby="composer-heading">
+          <div class="panel-heading"><div class="section-icon" data-icon="spark"></div><h2 id="composer-heading">创建修复任务</h2><span class="step-label">01 — INPUT</span></div>
+          <div class="composer-body">
+            <div class="segmented" role="group" aria-label="任务模式"><button class="selected" id="mode-demo" aria-pressed="true">示例演示</button><button id="mode-real" aria-pressed="false">真实模型<span class="mini-dot" id="model-dot"></span></button></div>
+            <div class="mode-explanation" id="mode-explanation"><span data-icon="info"></span><span>无需密钥，体验完整的修复与验证流程。</span></div>
+            <label class="field-label" for="task-prompt">任务描述<span id="prompt-readonly">预设示例</span></label>
+            <div class="prompt-wrapper"><textarea id="task-prompt" rows="5" maxlength="8000" readonly>修复 calculator.py 中的 add(a, b) 函数：当前错误地执行了减法。保留测试文件，运行 test_calculator.py 验证修复结果。</textarea><span class="prompt-footer"><span data-icon="terminal"></span><span id="prompt-hint">代码修复 / Python</span></span></div>
+            <div id="demo-files"><div class="field-label">工作区文件<span>2 个文件</span></div><div class="fixture-file"><span class="file-icon python">Py</span><span>calculator.py<small>待修复的业务代码</small></span><span class="file-tag">SOURCE</span></div><div class="fixture-file"><span class="file-icon test" data-icon="flask"></span><span>test_calculator.py<small>3 条单元测试 · 只读</small></span><span class="file-tag">TEST</span></div></div>
+            <div id="real-files" hidden><label class="field-label" for="file-input">上传源码<span>最多 30 个文件</span></label><label class="upload-zone" for="file-input" id="upload-zone"><span data-icon="upload"></span><strong>点击选择或拖入 Python 文件</strong><span>包含根目录的 test_*.py 测试文件</span><input type="file" id="file-input" accept=".py" multiple></label><div id="uploaded-files" class="uploaded-files"></div></div>
+            <div class="workflow-hint"><span class="workflow-node" data-icon="search"></span><span>读取</span><i></i><span class="workflow-node" data-icon="code"></span><span>修复</span><i></i><span class="workflow-node" data-icon="check"></span><span>验证</span></div>
+            <button class="button primary run-button" id="run-button"><span data-icon="play"></span><span id="run-button-label">运行示例任务</span><span class="button-arrow" data-icon="arrow-right"></span></button>
+            <p class="composer-footnote" id="composer-footnote"><span data-icon="shield"></span>固定演示流程 · 实际修改文件并运行测试</p>
+          </div>
+        </section>
+
+        <section class="panel execution-panel" aria-labelledby="execution-heading">
+          <div class="panel-heading"><div class="section-icon" data-icon="route"></div><h2 id="execution-heading">执行轨迹</h2><span class="status-badge neutral" id="execution-status">等待任务</span></div>
+          <div class="execution-meta"><span class="mono" id="task-id-label">尚未选择任务</span><span id="task-time-label">—</span><button class="text-button" id="copy-task-id" hidden aria-label="复制任务编号"><span data-icon="copy"></span></button></div>
+          <div class="trace-list" id="trace-list"></div>
+          <div class="execution-bottom"><span class="live-label" id="live-label"><i class="small-dot"></i><span>执行记录将显示在这里</span></span><button class="text-button" id="show-events">查看执行事件<span data-icon="arrow-right"></span></button></div>
+          <div class="result-banner" id="result-banner" hidden></div>
+          <div class="recovery-actions" id="recovery-actions" hidden><p id="recovery-explanation"></p><label id="retry-tests-label" hidden><input type="checkbox" id="retry-tests">我已检查测试副作用，允许重新执行测试</label><button class="button secondary" id="resume-button"><span data-icon="refresh"></span>恢复任务</button></div>
+        </section>
+
+        <section class="panel inspector-panel" aria-label="任务执行详情">
+          <div class="inspector-toolbar"><div class="inspector-tabs" role="tablist" aria-label="执行详情"><button class="inspector-tab selected" id="tab-diff" role="tab" aria-selected="true" aria-controls="content-diff" data-tab="diff"><span data-icon="git-diff"></span>代码差异<span id="changed-count" class="tab-count">0</span></button><button class="inspector-tab" id="tab-tests" role="tab" aria-selected="false" aria-controls="content-tests" data-tab="tests"><span data-icon="terminal"></span>测试输出</button><button class="inspector-tab" id="tab-events" role="tab" aria-selected="false" aria-controls="content-events" data-tab="events"><span data-icon="list"></span>执行事件<span id="event-count" class="tab-count">0</span></button></div><div class="inspector-actions"><button class="icon-button" id="copy-file" title="复制当前文件" aria-label="复制当前文件" disabled><span data-icon="copy"></span></button><button class="icon-button" id="download-file" title="下载当前文件" aria-label="下载当前文件" disabled><span data-icon="download"></span></button></div></div>
+          <div id="content-diff" class="tab-content" role="tabpanel" aria-labelledby="tab-diff"><div class="file-toolbar"><select id="file-select" aria-label="选择文件"><option>尚无任务文件</option></select><span class="diff-summary" id="diff-summary">运行任务后查看修改</span></div><div id="code-view" class="code-view"><div class="inspector-empty"><span data-icon="git-diff"></span><strong>每一处修改，都清晰可见</strong><p>运行一个任务，在这里检查源码差异。</p></div></div></div>
+          <div id="content-tests" class="tab-content" role="tabpanel" aria-labelledby="tab-tests" hidden><div class="terminal-heading"><span><i class="small-dot"></i>UNITTEST OUTPUT</span><span id="test-summary">等待测试执行</span></div><pre id="test-output" class="test-output">测试输出将在任务运行后显示。</pre></div>
+          <div id="content-events" class="tab-content" role="tabpanel" aria-labelledby="tab-events" hidden><div id="events-list" class="events-list"><div class="inspector-empty"><span data-icon="list"></span><strong>尚无执行事件</strong><p>任务事件会在执行时自动更新。</p></div></div></div>
+        </section>
+      </div>
+
+      <section class="panel history-panel" id="history-section" aria-labelledby="history-heading">
+        <div class="history-heading"><div><h2 id="history-heading">最近任务<span id="history-total">0</span></h2><p>查看执行结果，或继续处理中断的任务。</p></div><label class="search-box"><span data-icon="search"></span><input id="task-search" placeholder="搜索任务或编号" aria-label="搜索任务或编号"></label></div>
+        <div class="table-scroll"><table><thead><tr><th>任务</th><th>状态</th><th>运行方式</th><th>工具调用</th><th>创建时间</th><th><span class="sr-only">操作</span></th></tr></thead><tbody id="history-body"></tbody></table><div class="history-empty" id="history-empty" hidden><span data-icon="inbox"></span><strong>从第一个任务开始</strong><span>点击「运行示例任务」，体验完整流程。</span></div></div>
+        <div class="history-footer"><span id="history-footer-label">所有任务仅保存在本地工作空间</span><span class="mono">LOCAL & PERSISTENT</span></div>
+      </section>
+      <footer class="page-footer"><span>HARNESS STUDIO<span class="footer-separator">/</span>让行动有序，让结果可信。</span><span><i class="small-dot green-dot"></i> 本地工作空间</span></footer>
+    </main>
+  </div>
+
+  <dialog id="info-dialog" aria-labelledby="dialog-title"><div class="dialog-heading"><span class="dialog-eyebrow" id="dialog-eyebrow">GET STARTED</span><button class="icon-button" id="dialog-close" aria-label="关闭"><span data-icon="x"></span></button></div><h2 id="dialog-title">开始你的第一个任务</h2><div id="dialog-body"></div><div class="dialog-bottom"><button class="button primary" id="dialog-done">知道了<span data-icon="arrow-right"></span></button></div></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden><span data-icon="check-circle"></span><span id="toast-message"></span></div>
+</body>
+</html>

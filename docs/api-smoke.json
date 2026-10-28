@@ -1,0 +1,17 @@
+{
+  "health": {
+    "status": "ok",
+    "model_mode": "demo",
+    "upstream": "deepagents==0.7.32"
+  },
+  "task_id": "2ecaa358e2bb4e01b0b6eed55123467d",
+  "status": "succeeded",
+  "metrics": {
+    "tool_calls": 3,
+    "tool_execution_attempts": 3,
+    "reused_results": 0,
+    "file_write_attempts": 1
+  },
+  "events": 14,
+  "sse_verified": true
+}

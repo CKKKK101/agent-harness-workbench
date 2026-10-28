@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/langchain-ai/deepagents",
+  "version": "0.7.32",
+  "tag": "deepagents==0.7.32",
+  "commit_short": "e85c6b9",
+  "archive_sha256": "181fe2b866e601f51c05f35c333840762467c1c1d502483a66ed394edc084702",
+  "source_directory": "upstream/deepagents-deepagents-0.7.32",
+  "downloaded_on": "2026-10-28"
+}

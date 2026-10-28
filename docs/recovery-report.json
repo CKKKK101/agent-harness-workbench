@@ -1,0 +1,74 @@
+{
+  "upstream": "deepagents==0.7.32",
+  "model": "deterministic_fixture",
+  "scope": "engineering recovery only; no general coding or LLM-quality claim",
+  "passed": 5,
+  "total": 5,
+  "cases": [
+    {
+      "fault": "none",
+      "passed": true,
+      "worker_exit": 0,
+      "status": "succeeded",
+      "attempts": 1,
+      "tests_unchanged": true,
+      "tool_calls": 3,
+      "tool_execution_attempts": 3,
+      "reused_results": 0,
+      "file_write_attempts": 1,
+      "elapsed_seconds": 1.564
+    },
+    {
+      "fault": "after_prepare",
+      "passed": true,
+      "worker_exit": 86,
+      "status": "succeeded",
+      "attempts": 2,
+      "tests_unchanged": true,
+      "tool_calls": 3,
+      "tool_execution_attempts": 3,
+      "reused_results": 0,
+      "file_write_attempts": 1,
+      "elapsed_seconds": 2.833
+    },
+    {
+      "fault": "after_effect",
+      "passed": true,
+      "worker_exit": 86,
+      "status": "succeeded",
+      "attempts": 2,
+      "tests_unchanged": true,
+      "tool_calls": 3,
+      "tool_execution_attempts": 3,
+      "reused_results": 1,
+      "file_write_attempts": 1,
+      "elapsed_seconds": 2.872
+    },
+    {
+      "fault": "after_journal",
+      "passed": true,
+      "worker_exit": 86,
+      "status": "succeeded",
+      "attempts": 2,
+      "tests_unchanged": true,
+      "tool_calls": 3,
+      "tool_execution_attempts": 3,
+      "reused_results": 1,
+      "file_write_attempts": 1,
+      "elapsed_seconds": 2.764
+    },
+    {
+      "fault": "after_graph",
+      "passed": true,
+      "worker_exit": 86,
+      "status": "succeeded",
+      "attempts": 2,
+      "tests_unchanged": true,
+      "tool_calls": 3,
+      "tool_execution_attempts": 3,
+      "reused_results": 0,
+      "file_write_attempts": 1,
+      "elapsed_seconds": 2.86
+    }
+  ]
+}
