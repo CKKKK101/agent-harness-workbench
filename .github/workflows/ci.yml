@@ -1,0 +1,76 @@
+name: Reliability checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reliability-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.12', '3.14']
+    env:
+      WORKBENCH_MODEL_MODE: demo
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+      - run: uv sync --extra dev --frozen
+      - run: uv run ruff check src tests scripts/run_ui_checks.py
+      - run: uv run pytest -q -o junit_family=xunit1 --junitxml=artifacts/pytest.xml
+      - run: uv run harness evaluate
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: backend-${{ matrix.os }}-${{ matrix.python }}
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+
+  browser:
+    name: Ubuntu / browser regressions
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      WORKBENCH_MODEL_MODE: demo
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: '3.14'
+          enable-cache: true
+      - run: uv sync --extra dev --frozen
+      - run: npm ci
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Start isolated service and run browser checks
+        run: |
+          export CHROME_PATH="$(node --input-type=module -e 'import { chromium } from "playwright-core"; console.log(chromium.executablePath())')"
+          uv run python scripts/run_ui_checks.py
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: browser-ubuntu
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 14

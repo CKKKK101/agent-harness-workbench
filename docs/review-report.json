@@ -1,0 +1,113 @@
+{
+  "date": "2026-10-29",
+  "timezone": "Asia/Shanghai",
+  "platform": "Windows",
+  "review_kind": "local_self_review_not_independent_audit",
+  "pytest": {
+    "passed": 55,
+    "review_regressions": [
+      "test_posix_cleanup_waits_for_remaining_group_members",
+      "test_posix_cleanup_failure_is_not_reported_as_success",
+      "test_supervisor_failure_blocks_instead_of_marking_task_failed[]",
+      "test_supervisor_failure_blocks_instead_of_marking_task_failed[ready\\n]",
+      "test_supervisor_failure_blocks_instead_of_marking_task_failed[ready\\nnot-json\\n]",
+      "test_cleanup_failure_leaves_marker_and_blocks_service_resume"
+    ]
+  },
+  "ruff": "passed",
+  "workflow_yaml": "parsed_and_matrix_checked",
+  "recovery_evaluation": {
+    "upstream": "deepagents==0.7.32",
+    "model": "deterministic_fixture",
+    "scope": "engineering recovery only; no general coding or LLM-quality claim",
+    "passed": 5,
+    "total": 5,
+    "cases": [
+      {
+        "fault": "none",
+        "passed": true,
+        "worker_exit": 0,
+        "status": "succeeded",
+        "attempts": 1,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 0,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 2.144
+      },
+      {
+        "fault": "after_prepare",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 0,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 3.431
+      },
+      {
+        "fault": "after_effect",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 1,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 3.554
+      },
+      {
+        "fault": "after_journal",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 1,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 3.349
+      },
+      {
+        "fault": "after_graph",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 0,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 3.569
+      }
+    ]
+  },
+  "browser_checks": {
+    "passed": 11,
+    "errors": [],
+    "acceptance": {
+      "passed": true,
+      "checks": [
+        "Harness full-suite failure overrides Agent partial-test success in UI",
+        "Unknown Harness acceptance requires explicit retry through existing UI"
+      ],
+      "errors": []
+    }
+  },
+  "linux_execution": "pending_remote_ci_no_local_linux_runtime",
+  "source_sha256": {
+    "execution.py": "225d866d67cfad70b3691df8e4ba1f22923dfbf1e2ac3bdd5d700a8bfac3b0f2",
+    "tools.py": "3b340717fe3c5b68fabdece69384a53fbe2e8e7dc629a85b12fa1b782ff57376",
+    "service.py": "4ab5c26a11341aa896280e6a8663060c7bda3d36e1155a5b6b5e88be19d2676c",
+    "test_process.py": "6a4fbe0718a319a022c7a32f27254e3fc4caedbb288d46692bd800ec392632da",
+    "test_suite.py": "e5fab51d804ec3afa5bdeeba00aa4244a04365c1303817b85be7132022ac593e"
+  }
+}

@@ -1,0 +1,157 @@
+{
+  "date": "2026-10-29",
+  "timezone": "Asia/Shanghai",
+  "platform": "Windows",
+  "pytest": {
+    "passed": 49,
+    "failed": 0,
+    "errors": 0,
+    "new_regressions": 20,
+    "regression_cases": [
+      "test_worker_death_cleans_live_test_tree_before_safe_resume[agent]",
+      "test_worker_death_cleans_live_test_tree_before_safe_resume[acceptance]",
+      "test_owner_dies_before_authorization_never_starts_tests",
+      "test_hidden_operable_file_changes_fingerprint[.settings.py]",
+      "test_hidden_operable_file_changes_fingerprint[.custom/settings.py]",
+      "test_excluded_generated_files_cannot_be_tool_inputs[__pycache__/x.py]",
+      "test_excluded_generated_files_cannot_be_tool_inputs[.pytest_cache/x.py]",
+      "test_excluded_generated_files_cannot_be_tool_inputs[.ruff_cache/x.py]",
+      "test_excluded_generated_files_cannot_be_tool_inputs[.harness-write-abandoned]",
+      "test_final_acceptance_runs_all_original_files[True-test_other.py]",
+      "test_final_acceptance_runs_all_original_files[True-.checks/test_other.py]",
+      "test_final_acceptance_runs_all_original_files[False-test_other.py]",
+      "test_final_acceptance_runs_all_original_files[False-.checks/test_other.py]",
+      "test_hidden_change_invalidates_cached_final_evidence",
+      "test_original_acceptance_tests_cannot_be_changed_or_removed[False]",
+      "test_original_acceptance_tests_cannot_be_changed_or_removed[True]",
+      "test_unconfirmed_supervisor_cleanup_blocks_even_authorized_retry",
+      "test_acceptance_preserves_original_crlf_bytes",
+      "test_change_during_temp_write_is_detected_before_replacement",
+      "test_uncoordinated_write_after_last_check_is_outside_contract"
+    ]
+  },
+  "worker_death_experiments": [
+    {
+      "test": "test_worker_death_cleans_live_test_tree_before_safe_resume[agent]",
+      "phase": "agent",
+      "worker_exit": "86",
+      "live_test_and_descendant_stopped": "True",
+      "unknown_result_blocked": "True",
+      "authorized_resume_status": "succeeded",
+      "file_write_attempts": "1"
+    },
+    {
+      "test": "test_worker_death_cleans_live_test_tree_before_safe_resume[acceptance]",
+      "phase": "acceptance",
+      "worker_exit": "86",
+      "live_test_and_descendant_stopped": "True",
+      "unknown_result_blocked": "True",
+      "authorized_resume_status": "succeeded",
+      "file_write_attempts": "1"
+    }
+  ],
+  "recovery_evaluation": {
+    "upstream": "deepagents==0.7.32",
+    "model": "deterministic_fixture",
+    "scope": "engineering recovery only; no general coding or LLM-quality claim",
+    "passed": 5,
+    "total": 5,
+    "cases": [
+      {
+        "fault": "none",
+        "passed": true,
+        "worker_exit": 0,
+        "status": "succeeded",
+        "attempts": 1,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 0,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 2.075
+      },
+      {
+        "fault": "after_prepare",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 0,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 3.466
+      },
+      {
+        "fault": "after_effect",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 1,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 3.583
+      },
+      {
+        "fault": "after_journal",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 1,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 3.425
+      },
+      {
+        "fault": "after_graph",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 0,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 3.446
+      }
+    ]
+  },
+  "browser": {
+    "passed": 11,
+    "checks": [
+      "desktop shell loads and connects to the backend",
+      "create demo, complete four stages, and render real source diff",
+      "switch files, test output, and persisted execution events",
+      "search task history and open a persisted task",
+      "guide, real-model upload/remove controls, and missing-model setup",
+      "connection failure and retry without losing the page",
+      "390px responsive layout and mobile navigation",
+      "no uncaught browser JavaScript errors",
+      "resume_after_effect_with_delayed_event_history",
+      "Harness full-suite failure overrides Agent partial-test success in UI",
+      "Unknown Harness acceptance requires explicit retry through existing UI"
+    ],
+    "errors": []
+  },
+  "source_sha256": {
+    "tools.py": "3b340717fe3c5b68fabdece69384a53fbe2e8e7dc629a85b12fa1b782ff57376",
+    "service.py": "4ab5c26a11341aa896280e6a8663060c7bda3d36e1155a5b6b5e88be19d2676c",
+    "execution.py": "8fc87a4ed968299d24d79a1b98e98fa716446dc0067f0bb2817b0b15fd84d0df",
+    "test_process.py": "6a4fbe0718a319a022c7a32f27254e3fc4caedbb288d46692bd800ec392632da",
+    "test_suite.py": "e5fab51d804ec3afa5bdeeba00aa4244a04365c1303817b85be7132022ac593e"
+  },
+  "limits": [
+    "Trusted local code only; no OS sandbox",
+    "Final hash check and replacement are not atomic CAS",
+    "POSIX process-group branch not executed in this Windows validation",
+    "Real LLM repair quality not evaluated"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "checks": [
+    "Harness full-suite failure overrides Agent partial-test success in UI",
+    "Unknown Harness acceptance requires explicit retry through existing UI"
+  ],
+  "errors": []
+}

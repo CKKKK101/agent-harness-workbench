@@ -1,5 +1,40 @@
 # 本地验证记录
 
+最新复审补充验证：**55 项 pytest、11 项浏览器检查、5/5 恢复评测通过**。此前 49 项为第一轮修复结果；本次新增 6 项清理与监督协议回归。详见 [REVIEW.md](REVIEW.md) 和 [review-report.json](review-report.json)。Linux 作业已配置，等待远端实际执行，不将 Windows 模拟检查视为 Linux 已验证。
+
+## 2026-10-29：可靠性审查修复后的验证
+
+本轮为 Windows 本地实际执行结果，完整报告见 [reliability-report.json](reliability-report.json)，保证与限制见 [RELIABILITY.md](RELIABILITY.md)。下方 2026-10-28 内容保留为历史记录，不能与本轮计数混用。
+
+| 检查 | 本轮结果 |
+|---|---|
+| pytest 全量 | **49 passed**，含 20 项新增回归 |
+| Ruff | 通过 |
+| 原有子进程恢复评测 | **5/5 通过**，每场景文件写入尝试 1 次 |
+| Worker 在 Agent 测试执行时真实退出 | 退出码 86；测试与派生进程停止；默认阻断；允许重试后成功 |
+| Worker 在 Harness 验收执行时真实退出 | 退出码 86；测试与派生进程停止；默认阻断；允许重试后成功 |
+| 前端浏览器检查 | **11 项通过**，无未捕获 JavaScript 错误 |
+| 完整测试集有失败文件 | Agent 部分测试通过仍不能成功，页面展示完整验收失败输出 |
+| 隐藏文件证据与并发 | 隐藏文件变化使旧证据失效；检测可见冲突，并验证最后检查后的 TOCTOU 限制 |
+
+两个运行中崩溃实验均在测试及派生进程写出心跳后才退出 Worker；立即请求恢复，确认清理后心跳不再变化、进程不再存活、清理租约可获取。未知结果未自动重跑，显式允许后成功，文件写入尝试保持 1。
+
+本轮针对本机可信代码。未验证 POSIX 进程组分支、真实模型修复质量、主机掉电或恶意测试逃逸。独占工作区是协作约束，不是权限隔离。Python 3.14 仍产生既有 13 条 LangSmith 弃用提示，没有隐藏。
+
+前端重跑包含原有 8 项常规检查、1 项恢复与状态竞态检查，以及 `test_ui_acceptance.mjs` 新增的 2 项验收展示与重试检查。独立验证服务使用 8001 端口和单独数据目录，与原有任务数据隔离；报告见 [ui-acceptance.json](ui-acceptance.json)。
+
+重跑命令：
+
+```powershell
+uv run pytest -q -o junit_family=xunit1 --junitxml=artifacts/reliability-junit.xml
+uv run ruff check src tests
+uv run harness evaluate
+# 先启动相同数据目录的本地服务
+npm.cmd run test:ui
+```
+
+## 2026-10-28：初始验证（历史）
+
 日期：2026-10-28（Asia/Shanghai）。这是一次本地开发验证，不是线上业务数据。
 
 ## 环境与来源

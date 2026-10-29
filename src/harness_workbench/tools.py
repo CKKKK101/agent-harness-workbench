@@ -1,4 +1,4 @@
-"""Narrow coding tools with durable intents and compare-and-swap file recovery.
+"""Narrow coding tools with durable intents and hash-reconciled file recovery.
 
 Workspace path checks are directory isolation, NOT an OS sandbox for Python tests.
 """
@@ -9,17 +9,24 @@ import hashlib
 import json
 import os
 import re
-import signal
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
+from .execution import run_supervised, wait_for_test_cleanup
 from .faults import FaultInjector, RecoveryConflict, UncertainExecution
 from .store import Store, encode
 
 TOOL_NAMES = {"inspect_file", "replace_text", "run_tests"}
 MAX_FILE_BYTES = 256_000
+WORKSPACE_EXCLUSIONS = {"__pycache__", ".pytest_cache", ".ruff_cache"}
+INTERNAL_PATHS = {".git", ".env", ".workbench"}
+
+
+def excluded_path(relative: Path) -> bool:
+    return any(part in WORKSPACE_EXCLUSIONS for part in relative.parts) or any(
+        part.startswith(".harness-write-") for part in relative.parts
+    )
 
 
 def digest(data: bytes) -> str:
@@ -32,7 +39,7 @@ def safe_path(root: Path, relative: str) -> Path:
     candidate = (root / relative).resolve()
     if not candidate.is_relative_to(root.resolve()) or candidate == root.resolve():
         raise ValueError("Path escapes the task workspace")
-    if any(p in {".git", ".env", ".workbench", "__pycache__"} for p in Path(relative).parts):
+    if any(p in INTERNAL_PATHS for p in Path(relative).parts) or excluded_path(Path(relative)):
         raise ValueError("Access to internal/credential paths is disabled")
     return candidate
 
@@ -48,7 +55,7 @@ def workspace_digest(root: Path) -> str:
     entries = []
     for p in sorted(root.rglob("*")):
         rel = p.relative_to(root)
-        if any(part.startswith(".") or part == "__pycache__" for part in rel.parts):
+        if excluded_path(rel):
             continue
         if p.is_symlink():
             raise ValueError("Symbolic links are not supported in task workspaces")
@@ -57,7 +64,7 @@ def workspace_digest(root: Path) -> str:
     return digest(encode(entries).encode())
 
 
-def atomic_write(path: Path, data: bytes):
+def atomic_write(path: Path, data: bytes, *, expected_sha256: str | None = None):
     """Same-directory replacement prevents partial file contents after process death."""
     fd, name = tempfile.mkstemp(prefix=".harness-write-", dir=path.parent)
     try:
@@ -65,6 +72,10 @@ def atomic_write(path: Path, data: bytes):
             stream.write(data)
             stream.flush()
             os.fsync(stream.fileno())
+        # Best-effort final check, NOT an atomic compare-and-swap with os.replace.
+        # All cooperating writers must hold the task lock; external writes are unsupported.
+        if expected_sha256 is not None and digest(read_bytes(path)) != expected_sha256:
+            raise RecoveryConflict("File changed while preparing replacement; write blocked")
         os.replace(name, path)
     finally:
         if os.path.exists(name):
@@ -86,7 +97,12 @@ class ToolRunner:
         self.timeout = timeout
         self.retry_uncertain_tests = retry_uncertain_tests
 
+    @property
+    def test_lease(self) -> Path:
+        return self.store.path.parent / "locks" / f"{self.task_id}.tests.lock"
+
     def execute(self, call_id: str, name: str, args: dict) -> dict:
+        wait_for_test_cleanup(self.test_lease)
         if name not in TOOL_NAMES:
             raise ValueError(f"Tool not enabled for this workbench: {name}")
         row = self.store.tool(self.task_id, call_id)
@@ -118,7 +134,10 @@ class ToolRunner:
                 self.store.tool_reused(self.task_id, call_id, "file_already_matches_intent")
             elif current_hash == prepared["before_hash"]:
                 self.store.tool_started(self.task_id, call_id)
-                atomic_write(path, prepared["content"].encode("utf-8"))
+                atomic_write(
+                    path, prepared["content"].encode("utf-8"),
+                    expected_sha256=prepared["before_hash"],
+                )
                 self.faults.hit("after_effect")
                 result = prepared["result"]
             else:
@@ -168,58 +187,67 @@ class ToolRunner:
             "result": {"path": args["path"], "sha256": digest(after), "changed": before != after},
         }
 
-    def _run_tests(self, target: str, fingerprint: str) -> dict:
-        command = [sys.executable, "-I", "-m", "unittest", "discover", "-s", ".", "-p", target]
+    def acceptance(self, original: dict[str, str]) -> dict:
+        """Harness-owned suite; the agent cannot choose its scope or cached call ID."""
+        wait_for_test_cleanup(self.test_lease)
+        targets = sorted(
+            name for name in original
+            if Path(name).name.startswith("test_") and name.endswith(".py")
+        )
+        if not targets:
+            raise RecoveryConflict("No original test manifest; create a new task")
+        for target in targets:
+            path = safe_path(self.workspace, target)
+            if not path.is_file() or read_bytes(path).decode("utf-8") != original[target]:
+                raise RecoveryConflict("Original acceptance tests changed; verification blocked")
+        call_id = "harness:acceptance:v1"
+        row = self.store.tool(self.task_id, call_id)
+        args = {"targets": targets, "scope": "original_test_manifest_v1"}
+        if row:
+            if row["name"] != "harness_acceptance" or row["arguments"] != encode(args):
+                raise RecoveryConflict("Acceptance manifest or reserved call ID changed")
+            if row["state"] == "succeeded":
+                return json.loads(row["result"])
+            if row["state"] == "started" and not self.retry_uncertain_tests:
+                raise UncertainExecution(
+                    "Previous test execution (Harness acceptance) has no durable result; "
+                    "explicit retry required"
+                )
+        else:
+            self.store.prepare(
+                self.task_id, call_id, "harness_acceptance", args,
+                {"fingerprint": workspace_digest(self.workspace)},
+            )
+        fingerprint = workspace_digest(self.workspace)
+        self.store.tool_started(self.task_id, call_id)
+        command = [sys.executable, "-m", "harness_workbench.test_suite", *targets]
+        result = self._run_tests(None, fingerprint, command=command) | {"targets": targets}
+        self.store.tool_done(self.task_id, call_id, result)
+        return result
+
+    def _run_tests(self, target: str | None, fingerprint: str, *, command=None) -> dict:
+        command = command or [
+            sys.executable, "-I", "-m", "unittest", "discover", "-s", ".", "-p", target
+        ]
         env = {
             k: v
             for k, v in os.environ.items()
             if k.upper() in {"SYSTEMROOT", "WINDIR", "PATH", "TEMP", "TMP", "LANG"}
         }
         env.update({"PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"})
-        timed_out = False
-        # Redirect to disk: an excessively verbose test cannot fill a subprocess pipe.
-        with tempfile.TemporaryFile() as output:
-            kwargs = (
-                {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
-                if os.name == "nt"
-                else {"start_new_session": True}
-            )
-            child = subprocess.Popen(
-                command,
-                cwd=self.workspace,
-                env=env,
-                stdout=output,
-                stderr=subprocess.STDOUT,
-                **kwargs,
-            )
-            try:
-                child.wait(timeout=self.timeout)
-            except subprocess.TimeoutExpired:
-                timed_out = True
-                if os.name == "nt":
-                    subprocess.run(
-                        ["taskkill", "/PID", str(child.pid), "/T", "/F"],
-                        capture_output=True,
-                        check=False,
-                    )
-                else:
-                    os.killpg(child.pid, signal.SIGKILL)
-                child.wait(timeout=5)
-            output.seek(0, os.SEEK_END)
-            size = output.tell()
-            output.seek(max(0, size - 8000))
-            tail = output.read().decode("utf-8", errors="replace")
+        execution = run_supervised(command, self.workspace, env, self.timeout, self.test_lease)
+        tail, size = execution["output"], execution["output_bytes"]
         after = workspace_digest(self.workspace)
         # Older unittest versions can exit 0 without tests: require a non-zero count.
         matched = re.search(r"Ran (\d+) tests?", tail)
         count = int(matched.group(1)) if matched else 0
         return {
-            "returncode": child.returncode,
-            "timed_out": timed_out,
+            "returncode": execution["returncode"],
+            "timed_out": execution["timed_out"],
             "output": tail,
             "output_bytes": size,
             "tests_run": count,
             "fingerprint": after,
             "inputs_unchanged": after == fingerprint,
-            "verified": child.returncode == 0 and count > 0 and after == fingerprint,
+            "verified": execution["returncode"] == 0 and count > 0 and after == fingerprint,
         }

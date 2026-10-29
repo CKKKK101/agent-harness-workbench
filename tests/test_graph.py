@@ -13,7 +13,7 @@ def test_complete_graph_repairs_and_verifies_fixture(service):
     result = service.run_sync(task["id"])
     assert result["status"] == "succeeded"
     assert result["metrics"]["file_write_attempts"] == 1
-    assert result["metrics"]["tool_calls"] == 3
+    assert result["metrics"]["tool_calls"] == 4  # Three agent tools + Harness acceptance.
 
 
 @pytest.mark.parametrize("fault", ["after_prepare", "after_effect", "after_journal", "after_graph"])

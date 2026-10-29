@@ -11,11 +11,12 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 
 from .agent import build_agent
 from .config import Settings
+from .execution import wait_for_test_cleanup
 from .faults import FaultInjector, InjectedCrash, RecoveryConflict, UncertainExecution
 from .fixtures import DEMO_PROMPT, demo_files
 from .models import create_model
 from .store import Store
-from .tools import MAX_FILE_BYTES, ToolRunner, safe_path, workspace_digest
+from .tools import MAX_FILE_BYTES, ToolRunner, excluded_path, safe_path, workspace_digest
 
 TERMINAL = {"succeeded", "failed", "blocked", "interrupted"}
 
@@ -183,6 +184,7 @@ class TaskService:
             "recursion_limit": self.settings.recursion_limit,
         }
         try:
+            wait_for_test_cleanup(runner.test_lease)
             db_path = str(self.settings.data_dir / "checkpoints" / f"{task_id}.sqlite")
             with SqliteSaver.from_conn_string(db_path) as checkpointer:
                 agent = build_agent(task["model_mode"], runner, checkpointer)
@@ -198,7 +200,7 @@ class TaskService:
                     )
                     result = agent.invoke(inputs, config)
                 faults.hit("after_graph")
-                self._finalize(task_id, workspace, result)
+                self._finalize(task_id, workspace, result, runner=runner)
         except InjectedCrash as exc:
             self.store.set_status(task_id, "interrupted", error=f"Injected crash: {exc}")
         except (RecoveryConflict, UncertainExecution) as exc:
@@ -211,25 +213,23 @@ class TaskService:
             )
             raise
 
-    def _finalize(self, task_id: str, workspace: Path, result: dict):
-        tests = [
-            row
-            for row in self.store.tools(task_id)
-            if row["name"] == "run_tests" and row["state"] == "succeeded"
-        ]
-        evidence = json.loads(tests[-1]["result"]) if tests else {}
+    def _finalize(self, task_id: str, workspace: Path, result: dict, *, runner: ToolRunner):
+        evidence = runner.acceptance(self.store.source_files(task_id))
         verified = evidence.get("verified") and evidence.get("fingerprint") == workspace_digest(
             workspace
         )
         last = result["messages"][-1]
         content = last.content
         answer = content if isinstance(content, str) else json.dumps(content, ensure_ascii=False)
-        self.store.event(task_id, "verification.completed", {"verified": bool(verified)})
+        self.store.event(task_id, "verification.completed", {
+            "verified": bool(verified), "scope": "original_test_manifest_v1",
+            "evidence": evidence,
+        })
         self.store.set_status(
             task_id,
             "succeeded" if verified else "failed",
             result=answer,
-            error=None if verified else "No passing, non-empty test result for the final workspace",
+            error=None if verified else "Harness acceptance suite failed or evidence became stale",
         )
 
     def files(self, task_id: str) -> dict[str, str]:
@@ -241,9 +241,7 @@ class TaskService:
             for p in sorted(root.rglob("*"))
             if p.is_file()
             and not p.is_symlink()
-            and not any(
-                part.startswith(".") or part == "__pycache__" for part in p.relative_to(root).parts
-            )
+            and not excluded_path(p.relative_to(root))
         }
 
     def close(self):

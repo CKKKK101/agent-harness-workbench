@@ -211,7 +211,8 @@
       names, completed,
       read: completed.filter((e) => e.name === "inspect_file").at(-1),
       edit: completed.filter((e) => e.name === "replace_text").at(-1),
-      test: completed.filter((e) => e.name === "run_tests").at(-1),
+      test: completed.filter((e) => e.name === "harness_acceptance").at(-1)
+        || completed.filter((e) => e.name === "run_tests").at(-1),
       verification: state.events.filter((e) => e.kind === "verification.completed").at(-1),
     };
   }
@@ -225,7 +226,7 @@
       { title: "运行测试", note: "执行单元测试，检查修复是否符合预期。", event: test,
         done: Boolean(test?.result.verified), error: Boolean(test && !test.result.verified),
         detail: test ? `${test.result.tests_run} 条测试 · ${test.result.verified ? "全部通过" : test.result.timed_out ? "执行超时" : "验证未通过"}` : null },
-      { title: "验证并完成", note: "确认测试结果与最终代码状态一致。", event: verification,
+      { title: "验证并完成", note: "独立运行完整验收测试集，并核对最终代码状态。", event: verification,
         done: Boolean(verification?.payload.verified), error: Boolean(verification && !verification.payload.verified),
         detail: verification ? (verification.payload.verified ? "测试证据与工作区指纹一致，任务已完成" : "尚未获得最终代码通过测试的有效证据") : null },
     ];

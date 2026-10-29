@@ -3,6 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "description": "Optional browser checks for the buildless Harness Studio frontend.",
-  "scripts": { "test:ui": "node scripts/test_ui.mjs && node scripts/test_ui_recovery.mjs" },
+  "scripts": { "test:ui": "node scripts/test_ui.mjs && node scripts/test_ui_recovery.mjs && node scripts/test_ui_acceptance.mjs" },
   "devDependencies": { "playwright-core": "1.64.1" }
 }
