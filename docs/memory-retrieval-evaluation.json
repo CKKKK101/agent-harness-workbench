@@ -1,0 +1,997 @@
+{
+  "scope": "Authored retrieval notes, not actual production incidents or generation quality",
+  "queries": 24,
+  "notes": 8,
+  "model": "ce1a5b99b5e33c470037f34d2bcd3a471db8b0aa80772955e08a32e7b193f496",
+  "batch_embedding_ms": 1758.867,
+  "dense_threshold": 0.5,
+  "summaries": {
+    "bm25/dev": {
+      "positive_count": 8,
+      "hit_count": 8,
+      "hit_at_3": 1.0,
+      "negative_count": 4,
+      "correct_rejection_count": 4,
+      "ranking_p50_ms": 0.521
+    },
+    "bm25/heldout": {
+      "positive_count": 8,
+      "hit_count": 5,
+      "hit_at_3": 0.625,
+      "negative_count": 4,
+      "correct_rejection_count": 4,
+      "ranking_p50_ms": 0.592
+    },
+    "dense/dev": {
+      "positive_count": 8,
+      "hit_count": 8,
+      "hit_at_3": 1.0,
+      "negative_count": 4,
+      "correct_rejection_count": 4,
+      "ranking_p50_ms": 0.5265
+    },
+    "dense/heldout": {
+      "positive_count": 8,
+      "hit_count": 4,
+      "hit_at_3": 0.5,
+      "negative_count": 4,
+      "correct_rejection_count": 4,
+      "ranking_p50_ms": 0.597
+    },
+    "hybrid/dev": {
+      "positive_count": 8,
+      "hit_count": 8,
+      "hit_at_3": 1.0,
+      "negative_count": 4,
+      "correct_rejection_count": 4,
+      "ranking_p50_ms": 0.5535000000000001
+    },
+    "hybrid/heldout": {
+      "positive_count": 8,
+      "hit_count": 6,
+      "hit_at_3": 0.75,
+      "negative_count": 4,
+      "correct_rejection_count": 4,
+      "ranking_p50_ms": 0.5465
+    }
+  },
+  "results": [
+    {
+      "split": "dev",
+      "query": "空列表求平均值为什么报错",
+      "relevant": [
+        "empty_input"
+      ],
+      "mode": "bm25",
+      "found": [
+        "empty_input"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 1.188
+    },
+    {
+      "split": "dev",
+      "query": "金额计算有浮点精度问题",
+      "relevant": [
+        "decimal"
+      ],
+      "mode": "bm25",
+      "found": [
+        "decimal"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.582
+    },
+    {
+      "split": "dev",
+      "query": "订单支付重复请求导致重复扣款",
+      "relevant": [
+        "idempotence"
+      ],
+      "mode": "bm25",
+      "found": [
+        "idempotence",
+        "retry"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.522
+    },
+    {
+      "split": "dev",
+      "query": "时间展示相差八小时需要转换时区",
+      "relevant": [
+        "timezone"
+      ],
+      "mode": "bm25",
+      "found": [
+        "timezone",
+        "retry",
+        "jwt"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.499
+    },
+    {
+      "split": "dev",
+      "query": "JWT 过期后应该如何恢复登录状态",
+      "relevant": [
+        "jwt"
+      ],
+      "mode": "bm25",
+      "found": [
+        "jwt"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.512
+    },
+    {
+      "split": "dev",
+      "query": "上游返回503时怎么退避重试",
+      "relevant": [
+        "retry"
+      ],
+      "mode": "bm25",
+      "found": [
+        "retry",
+        "cache",
+        "empty_input"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.473
+    },
+    {
+      "split": "dev",
+      "query": "缓存更新后仍然显示旧数据",
+      "relevant": [
+        "cache"
+      ],
+      "mode": "bm25",
+      "found": [
+        "cache",
+        "sql"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.475
+    },
+    {
+      "split": "dev",
+      "query": "SQL 拼接用户输入存在注入风险",
+      "relevant": [
+        "sql"
+      ],
+      "mode": "bm25",
+      "found": [
+        "sql",
+        "timezone",
+        "empty_input"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.488
+    },
+    {
+      "split": "dev",
+      "query": "推荐适合观星的旅游地点",
+      "relevant": [],
+      "mode": "bm25",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.52
+    },
+    {
+      "split": "dev",
+      "query": "帮我写一首关于秋天的诗",
+      "relevant": [],
+      "mode": "bm25",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.587
+    },
+    {
+      "split": "dev",
+      "query": "解释火山喷发的形成过程",
+      "relevant": [],
+      "mode": "bm25",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.588
+    },
+    {
+      "split": "dev",
+      "query": "挑选室内盆栽的品种",
+      "relevant": [],
+      "mode": "bm25",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.645
+    },
+    {
+      "split": "heldout",
+      "query": "统计接口没收到任何数据就异常",
+      "relevant": [
+        "empty_input"
+      ],
+      "mode": "bm25",
+      "found": [
+        "cache",
+        "empty_input",
+        "sql"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.674
+    },
+    {
+      "split": "heldout",
+      "query": "账单总额出现了0.30000000004",
+      "relevant": [
+        "decimal"
+      ],
+      "mode": "bm25",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.677
+    },
+    {
+      "split": "heldout",
+      "query": "点了两遍付款余额就扣了两次",
+      "relevant": [
+        "idempotence"
+      ],
+      "mode": "bm25",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.778
+    },
+    {
+      "split": "heldout",
+      "query": "国外用户的预约时刻总是错位",
+      "relevant": [
+        "timezone"
+      ],
+      "mode": "bm25",
+      "found": [
+        "sql",
+        "timezone"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.588
+    },
+    {
+      "split": "heldout",
+      "query": "刚认证成功一会儿又要重新登录",
+      "relevant": [
+        "jwt"
+      ],
+      "mode": "bm25",
+      "found": [
+        "jwt"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.589
+    },
+    {
+      "split": "heldout",
+      "query": "第三方接口偶尔不可用希望请求能恢复",
+      "relevant": [
+        "retry"
+      ],
+      "mode": "bm25",
+      "found": [
+        "jwt",
+        "idempotence",
+        "retry"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.567
+    },
+    {
+      "split": "heldout",
+      "query": "商品改价后页面仍然展示旧价格",
+      "relevant": [
+        "cache"
+      ],
+      "mode": "bm25",
+      "found": [
+        "timezone",
+        "decimal",
+        "jwt"
+      ],
+      "hit": false,
+      "rejected": false,
+      "ranking_ms": 0.595
+    },
+    {
+      "split": "heldout",
+      "query": "用户填的内容竟然改变了数据库筛选条件",
+      "relevant": [
+        "sql"
+      ],
+      "mode": "bm25",
+      "found": [
+        "sql",
+        "cache",
+        "timezone"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.628
+    },
+    {
+      "split": "heldout",
+      "query": "介绍古典音乐的主要流派",
+      "relevant": [],
+      "mode": "bm25",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.714
+    },
+    {
+      "split": "heldout",
+      "query": "如何辨认夜空中的星座",
+      "relevant": [],
+      "mode": "bm25",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.515
+    },
+    {
+      "split": "heldout",
+      "query": "为海边落日写一句文案",
+      "relevant": [],
+      "mode": "bm25",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.568
+    },
+    {
+      "split": "heldout",
+      "query": "讲讲蝴蝶的生命周期",
+      "relevant": [],
+      "mode": "bm25",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.539
+    },
+    {
+      "split": "dev",
+      "query": "空列表求平均值为什么报错",
+      "relevant": [
+        "empty_input"
+      ],
+      "mode": "dense",
+      "found": [
+        "empty_input"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.535
+    },
+    {
+      "split": "dev",
+      "query": "金额计算有浮点精度问题",
+      "relevant": [
+        "decimal"
+      ],
+      "mode": "dense",
+      "found": [
+        "decimal"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.514
+    },
+    {
+      "split": "dev",
+      "query": "订单支付重复请求导致重复扣款",
+      "relevant": [
+        "idempotence"
+      ],
+      "mode": "dense",
+      "found": [
+        "idempotence"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.539
+    },
+    {
+      "split": "dev",
+      "query": "时间展示相差八小时需要转换时区",
+      "relevant": [
+        "timezone"
+      ],
+      "mode": "dense",
+      "found": [
+        "timezone"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.53
+    },
+    {
+      "split": "dev",
+      "query": "JWT 过期后应该如何恢复登录状态",
+      "relevant": [
+        "jwt"
+      ],
+      "mode": "dense",
+      "found": [
+        "jwt",
+        "retry"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.513
+    },
+    {
+      "split": "dev",
+      "query": "上游返回503时怎么退避重试",
+      "relevant": [
+        "retry"
+      ],
+      "mode": "dense",
+      "found": [
+        "retry"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.531
+    },
+    {
+      "split": "dev",
+      "query": "缓存更新后仍然显示旧数据",
+      "relevant": [
+        "cache"
+      ],
+      "mode": "dense",
+      "found": [
+        "cache"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.523
+    },
+    {
+      "split": "dev",
+      "query": "SQL 拼接用户输入存在注入风险",
+      "relevant": [
+        "sql"
+      ],
+      "mode": "dense",
+      "found": [
+        "sql"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.553
+    },
+    {
+      "split": "dev",
+      "query": "推荐适合观星的旅游地点",
+      "relevant": [],
+      "mode": "dense",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.512
+    },
+    {
+      "split": "dev",
+      "query": "帮我写一首关于秋天的诗",
+      "relevant": [],
+      "mode": "dense",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.52
+    },
+    {
+      "split": "dev",
+      "query": "解释火山喷发的形成过程",
+      "relevant": [],
+      "mode": "dense",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.522
+    },
+    {
+      "split": "dev",
+      "query": "挑选室内盆栽的品种",
+      "relevant": [],
+      "mode": "dense",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.563
+    },
+    {
+      "split": "heldout",
+      "query": "统计接口没收到任何数据就异常",
+      "relevant": [
+        "empty_input"
+      ],
+      "mode": "dense",
+      "found": [
+        "empty_input"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.529
+    },
+    {
+      "split": "heldout",
+      "query": "账单总额出现了0.30000000004",
+      "relevant": [
+        "decimal"
+      ],
+      "mode": "dense",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.513
+    },
+    {
+      "split": "heldout",
+      "query": "点了两遍付款余额就扣了两次",
+      "relevant": [
+        "idempotence"
+      ],
+      "mode": "dense",
+      "found": [
+        "idempotence"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.516
+    },
+    {
+      "split": "heldout",
+      "query": "国外用户的预约时刻总是错位",
+      "relevant": [
+        "timezone"
+      ],
+      "mode": "dense",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.595
+    },
+    {
+      "split": "heldout",
+      "query": "刚认证成功一会儿又要重新登录",
+      "relevant": [
+        "jwt"
+      ],
+      "mode": "dense",
+      "found": [
+        "jwt"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.599
+    },
+    {
+      "split": "heldout",
+      "query": "第三方接口偶尔不可用希望请求能恢复",
+      "relevant": [
+        "retry"
+      ],
+      "mode": "dense",
+      "found": [
+        "idempotence"
+      ],
+      "hit": false,
+      "rejected": false,
+      "ranking_ms": 0.63
+    },
+    {
+      "split": "heldout",
+      "query": "商品改价后页面仍然展示旧价格",
+      "relevant": [
+        "cache"
+      ],
+      "mode": "dense",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.59
+    },
+    {
+      "split": "heldout",
+      "query": "用户填的内容竟然改变了数据库筛选条件",
+      "relevant": [
+        "sql"
+      ],
+      "mode": "dense",
+      "found": [
+        "sql"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.604
+    },
+    {
+      "split": "heldout",
+      "query": "介绍古典音乐的主要流派",
+      "relevant": [],
+      "mode": "dense",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.594
+    },
+    {
+      "split": "heldout",
+      "query": "如何辨认夜空中的星座",
+      "relevant": [],
+      "mode": "dense",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.733
+    },
+    {
+      "split": "heldout",
+      "query": "为海边落日写一句文案",
+      "relevant": [],
+      "mode": "dense",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.646
+    },
+    {
+      "split": "heldout",
+      "query": "讲讲蝴蝶的生命周期",
+      "relevant": [],
+      "mode": "dense",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.666
+    },
+    {
+      "split": "dev",
+      "query": "空列表求平均值为什么报错",
+      "relevant": [
+        "empty_input"
+      ],
+      "mode": "hybrid",
+      "found": [
+        "empty_input"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.634
+    },
+    {
+      "split": "dev",
+      "query": "金额计算有浮点精度问题",
+      "relevant": [
+        "decimal"
+      ],
+      "mode": "hybrid",
+      "found": [
+        "decimal"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.624
+    },
+    {
+      "split": "dev",
+      "query": "订单支付重复请求导致重复扣款",
+      "relevant": [
+        "idempotence"
+      ],
+      "mode": "hybrid",
+      "found": [
+        "idempotence",
+        "retry"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.596
+    },
+    {
+      "split": "dev",
+      "query": "时间展示相差八小时需要转换时区",
+      "relevant": [
+        "timezone"
+      ],
+      "mode": "hybrid",
+      "found": [
+        "timezone",
+        "retry",
+        "jwt"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.588
+    },
+    {
+      "split": "dev",
+      "query": "JWT 过期后应该如何恢复登录状态",
+      "relevant": [
+        "jwt"
+      ],
+      "mode": "hybrid",
+      "found": [
+        "jwt",
+        "retry"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.58
+    },
+    {
+      "split": "dev",
+      "query": "上游返回503时怎么退避重试",
+      "relevant": [
+        "retry"
+      ],
+      "mode": "hybrid",
+      "found": [
+        "retry",
+        "cache",
+        "empty_input"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.56
+    },
+    {
+      "split": "dev",
+      "query": "缓存更新后仍然显示旧数据",
+      "relevant": [
+        "cache"
+      ],
+      "mode": "hybrid",
+      "found": [
+        "cache",
+        "sql"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.547
+    },
+    {
+      "split": "dev",
+      "query": "SQL 拼接用户输入存在注入风险",
+      "relevant": [
+        "sql"
+      ],
+      "mode": "hybrid",
+      "found": [
+        "sql",
+        "timezone",
+        "empty_input"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.525
+    },
+    {
+      "split": "dev",
+      "query": "推荐适合观星的旅游地点",
+      "relevant": [],
+      "mode": "hybrid",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.517
+    },
+    {
+      "split": "dev",
+      "query": "帮我写一首关于秋天的诗",
+      "relevant": [],
+      "mode": "hybrid",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.512
+    },
+    {
+      "split": "dev",
+      "query": "解释火山喷发的形成过程",
+      "relevant": [],
+      "mode": "hybrid",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.51
+    },
+    {
+      "split": "dev",
+      "query": "挑选室内盆栽的品种",
+      "relevant": [],
+      "mode": "hybrid",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.523
+    },
+    {
+      "split": "heldout",
+      "query": "统计接口没收到任何数据就异常",
+      "relevant": [
+        "empty_input"
+      ],
+      "mode": "hybrid",
+      "found": [
+        "empty_input",
+        "cache",
+        "sql"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.526
+    },
+    {
+      "split": "heldout",
+      "query": "账单总额出现了0.30000000004",
+      "relevant": [
+        "decimal"
+      ],
+      "mode": "hybrid",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.542
+    },
+    {
+      "split": "heldout",
+      "query": "点了两遍付款余额就扣了两次",
+      "relevant": [
+        "idempotence"
+      ],
+      "mode": "hybrid",
+      "found": [
+        "idempotence"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.506
+    },
+    {
+      "split": "heldout",
+      "query": "国外用户的预约时刻总是错位",
+      "relevant": [
+        "timezone"
+      ],
+      "mode": "hybrid",
+      "found": [
+        "sql",
+        "timezone"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.514
+    },
+    {
+      "split": "heldout",
+      "query": "刚认证成功一会儿又要重新登录",
+      "relevant": [
+        "jwt"
+      ],
+      "mode": "hybrid",
+      "found": [
+        "jwt"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.516
+    },
+    {
+      "split": "heldout",
+      "query": "第三方接口偶尔不可用希望请求能恢复",
+      "relevant": [
+        "retry"
+      ],
+      "mode": "hybrid",
+      "found": [
+        "idempotence",
+        "jwt",
+        "retry"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.54
+    },
+    {
+      "split": "heldout",
+      "query": "商品改价后页面仍然展示旧价格",
+      "relevant": [
+        "cache"
+      ],
+      "mode": "hybrid",
+      "found": [
+        "timezone",
+        "decimal",
+        "jwt"
+      ],
+      "hit": false,
+      "rejected": false,
+      "ranking_ms": 0.551
+    },
+    {
+      "split": "heldout",
+      "query": "用户填的内容竟然改变了数据库筛选条件",
+      "relevant": [
+        "sql"
+      ],
+      "mode": "hybrid",
+      "found": [
+        "sql",
+        "cache",
+        "timezone"
+      ],
+      "hit": true,
+      "rejected": false,
+      "ranking_ms": 0.559
+    },
+    {
+      "split": "heldout",
+      "query": "介绍古典音乐的主要流派",
+      "relevant": [],
+      "mode": "hybrid",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.562
+    },
+    {
+      "split": "heldout",
+      "query": "如何辨认夜空中的星座",
+      "relevant": [],
+      "mode": "hybrid",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.577
+    },
+    {
+      "split": "heldout",
+      "query": "为海边落日写一句文案",
+      "relevant": [],
+      "mode": "hybrid",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.577
+    },
+    {
+      "split": "heldout",
+      "query": "讲讲蝴蝶的生命周期",
+      "relevant": [],
+      "mode": "hybrid",
+      "found": [],
+      "hit": false,
+      "rejected": true,
+      "ranking_ms": 0.575
+    }
+  ],
+  "limits": "Self-authored retrieval set; no real-LLM repair-rate or token-cost claim"
+}

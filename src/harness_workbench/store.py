@@ -59,6 +59,13 @@ class Store:
                     UNIQUE(scope,key,version)
                 );
                 CREATE INDEX IF NOT EXISTS memories_scope ON memories(scope,key,version);
+                CREATE TABLE IF NOT EXISTS memory_details (
+                    memory_id TEXT PRIMARY KEY, details TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS memory_vectors (
+                    model TEXT NOT NULL, digest TEXT NOT NULL, vector TEXT NOT NULL,
+                    PRIMARY KEY(model,digest)
+                );
                 CREATE TABLE IF NOT EXISTS context_views (
                     task_id TEXT NOT NULL, input_digest TEXT NOT NULL, checksum TEXT NOT NULL,
                     payload TEXT NOT NULL, created_at REAL NOT NULL,

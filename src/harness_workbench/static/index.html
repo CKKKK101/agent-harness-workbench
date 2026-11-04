@@ -89,6 +89,10 @@
               <textarea id="memory-content" rows="2" maxlength="2000" placeholder="例如：保留公开函数名称，使用类型注解。"></textarea>
               <div class="memory-actions"><button class="button secondary" id="memory-save">保存约定</button><button class="text-button" id="memory-refresh">查看记忆</button></div>
               <div id="memory-list" class="memory-list" aria-live="polite"></div>
+              <label class="field-label" for="recall-query">召回预览<span>使用当前任务的工作区核对</span></label>
+              <input id="recall-query" maxlength="2000" placeholder="例如：空输入时计算失败" autocomplete="off">
+              <button class="text-button" id="recall-preview">检查哪些记忆会被使用</button>
+              <div id="recall-result" class="memory-help" aria-live="polite"></div>
             </details>
             <div class="workflow-hint"><span class="workflow-node" data-icon="search"></span><span>读取</span><i></i><span class="workflow-node" data-icon="code"></span><span>修复</span><i></i><span class="workflow-node" data-icon="check"></span><span>验证</span></div>
             <button class="button primary run-button" id="run-button"><span data-icon="play"></span><span id="run-button-label">运行示例任务</span><span class="button-arrow" data-icon="arrow-right"></span></button>

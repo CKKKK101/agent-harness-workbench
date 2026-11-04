@@ -45,6 +45,17 @@ try {
   assert.notEqual(tasks[0], tasks[1]);
   check("two independent tasks recall the same current project-memory revision");
   await page.locator("#memory-refresh").click();
+  const experience = page.locator(".memory-record").filter({ hasText: "repair:" }).first();
+  await experience.locator("summary").click();
+  assert.match(await experience.innerText(), /return a \+ b/);
+  assert.match(await experience.innerText(), /3 条测试/);
+  assert.match(await experience.innerText(), /未自动推断根因/);
+  check("verified repair cards show observed edits and independent test provenance");
+  await page.locator("#recall-query").fill("calculator add");
+  await page.locator("#recall-preview").click();
+  await page.locator("#recall-result").getByText(/检索：bm25/).waitFor();
+  assert.match(await page.locator("#recall-result").innerText(), /向量不可用，已降级/);
+  check("recall preview explains lexical fallback without a prepared embedding model");
   const row = page.locator(".memory-record").filter({ hasText: "style · v2 · active" });
   await row.getByRole("button", { name: "标记失效" }).click();
   await page.locator("#memory-list").getByText("style · v3 · invalid", { exact: true }).waitFor();
@@ -53,6 +64,9 @@ try {
   })).json();
   assert.ok(!recall.selected.some((m) => m.key === "style"));
   check("invalidating memory excludes it from subsequent recall");
+  await page.locator("#recall-preview").click();
+  await page.locator("#recall-result").getByText(/排除 style v3：invalid/).waitFor();
+  check("recall preview exposes invalidation reasons instead of reusing old revisions");
   await page.evaluate(() => {
     document.querySelector("#memory-list").scrollTop = 0;
     window.scrollTo({ top: 0, behavior: "instant" });

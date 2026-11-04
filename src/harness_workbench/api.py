@@ -67,6 +67,9 @@ class RetireMemoryInput(BaseModel):
 
 class RecallInput(BaseModel):
     task_id: str
+    query: str | None = Field(default=None, min_length=1, max_length=2000)
+    mode: Literal["bm25", "dense", "hybrid"] = "hybrid"
+    top_k: int = Field(default=3, ge=1, le=10)
 
 
 class ResumeInput(BaseModel):
@@ -123,6 +126,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def list_tasks(request: Request):
         service = svc(request)
         return [service.get(t["id"]) for t in service.store.tasks()]
+
+    @app.get("/memory-status")
+    def memory_status(request: Request):
+        from .memory_search import MODEL
+
+        return {
+            "lexical": "bm25",
+            "fusion": "rrf",
+            "model": MODEL,
+            "model_prepared": svc(request).memory.encoder.profile.is_file(),
+            "model_checked": False,
+            "fallback": "bm25",
+        }
 
     @app.post("/projects/import", status_code=201)
     def import_project(body: ProjectInput, request: Request):
@@ -232,7 +248,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         task = service.store.task(body.task_id)
         if task["memory_scope"] != scope:
             raise HTTPException(409, "Task belongs to another memory scope")
-        return service.memory.recall(scope, task["prompt"], Path(task["workspace"]))
+        return service.memory.recall(
+            scope,
+            body.query or task["prompt"],
+            Path(task["workspace"]),
+            limit=body.top_k,
+            mode=body.mode,
+        )
 
     @app.post("/tasks/{task_id}/resume", status_code=202)
     def resume(task_id: str, body: ResumeInput, request: Request):

@@ -1,0 +1,39 @@
+{
+  "scope": "Authored retrieval notes, not actual production incidents or generation quality",
+  "notes": {
+    "empty_input": "空输入处理：对数组进行平均值、最大值等聚合运算前，先判断列表是否为空，按当前需求返回默认值或明确错误，避免空集合异常。",
+    "decimal": "金额精度：价格与财务计算使用 Decimal 或整数最小货币单位；避免二进制浮点误差，按业务约定统一舍入与小数位。",
+    "idempotence": "支付幂等：重复请求可能导致重复扣款。使用业务幂等键和唯一约束，重复订单复用已完成结果，不能仅依赖客户端按钮禁用。",
+    "timezone": "时区转换：服务端保存 UTC 时间和明确时区，展示时转换到用户所在地区；检查无时区 datetime 与夏令时偏移。",
+    "jwt": "身份恢复：JWT 令牌过期需要刷新凭据或重新认证，页面初始化恢复身份状态，避免会话失效后反复跳转登录页。",
+    "retry": "瞬时故障：上游 503、网络抖动或连接超时可使用有限次数的指数退避重试，并设置请求截止时间；非幂等操作需要先核对副作用。",
+    "cache": "缓存一致性：更新数据库后需要失效旧缓存或更新版本，避免页面继续返回过时的数据；检查缓存键与失效顺序。",
+    "sql": "查询安全：数据库查询使用参数化语句绑定用户输入，不拼接 SQL 字符串，防止注入和用户改变查询结构。"
+  },
+  "queries": [
+    {"split":"dev","query":"空列表求平均值为什么报错","relevant":["empty_input"]},
+    {"split":"dev","query":"金额计算有浮点精度问题","relevant":["decimal"]},
+    {"split":"dev","query":"订单支付重复请求导致重复扣款","relevant":["idempotence"]},
+    {"split":"dev","query":"时间展示相差八小时需要转换时区","relevant":["timezone"]},
+    {"split":"dev","query":"JWT 过期后应该如何恢复登录状态","relevant":["jwt"]},
+    {"split":"dev","query":"上游返回503时怎么退避重试","relevant":["retry"]},
+    {"split":"dev","query":"缓存更新后仍然显示旧数据","relevant":["cache"]},
+    {"split":"dev","query":"SQL 拼接用户输入存在注入风险","relevant":["sql"]},
+    {"split":"dev","query":"推荐适合观星的旅游地点","relevant":[]},
+    {"split":"dev","query":"帮我写一首关于秋天的诗","relevant":[]},
+    {"split":"dev","query":"解释火山喷发的形成过程","relevant":[]},
+    {"split":"dev","query":"挑选室内盆栽的品种","relevant":[]},
+    {"split":"heldout","query":"统计接口没收到任何数据就异常","relevant":["empty_input"]},
+    {"split":"heldout","query":"账单总额出现了0.30000000004","relevant":["decimal"]},
+    {"split":"heldout","query":"点了两遍付款余额就扣了两次","relevant":["idempotence"]},
+    {"split":"heldout","query":"国外用户的预约时刻总是错位","relevant":["timezone"]},
+    {"split":"heldout","query":"刚认证成功一会儿又要重新登录","relevant":["jwt"]},
+    {"split":"heldout","query":"第三方接口偶尔不可用希望请求能恢复","relevant":["retry"]},
+    {"split":"heldout","query":"商品改价后页面仍然展示旧价格","relevant":["cache"]},
+    {"split":"heldout","query":"用户填的内容竟然改变了数据库筛选条件","relevant":["sql"]},
+    {"split":"heldout","query":"介绍古典音乐的主要流派","relevant":[]},
+    {"split":"heldout","query":"如何辨认夜空中的星座","relevant":[]},
+    {"split":"heldout","query":"为海边落日写一句文案","relevant":[]},
+    {"split":"heldout","query":"讲讲蝴蝶的生命周期","relevant":[]}
+  ]
+}

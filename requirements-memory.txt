@@ -1,0 +1,4 @@
+# Optional, isolated Python 3.12 embedding environment. Tested on Windows.
+# Harness itself does not import native ONNX dependencies.
+fastembed==0.9.1
+onnxruntime==1.23.2

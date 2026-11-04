@@ -330,6 +330,15 @@
       const row = el("div", "memory-record");
       row.append(el("strong", "", `${record.key} · v${record.version} · ${record.status}`));
       row.append(el("p", "", record.content || "已删除，后续不再召回"));
+      if (record.details?.record_type === "verified_repair") {
+        const detail = el("details", "memory-evidence"), summary = el("summary", "", "查看结构化经验与验证依据");
+        const card = record.details;
+        detail.append(summary, el("p", "", `需求：${card.problem}`),
+          el("p", "", `历史修改：${card.observed_remedy}`),
+          el("p", "", `验证：${card.verification.tests_run} 条测试 · ${card.verification.acceptance_origin} · 来源任务 ${card.verification.source_task.slice(0, 8)}`),
+          el("p", "memory-help", "仅作经验参考，不能代表当前代码事实；未自动推断根因。使用前读取当前源码，并重新验收。"));
+        row.append(detail);
+      }
       if (record.status === "active") {
         const edit = el("button", "text-button", "编辑");
         edit.onclick = () => { $("memory-key").value = record.key; $("memory-content").value = record.content; };
@@ -362,6 +371,20 @@
         key, content, kind: "constraint", expected_version: previous?.version ?? null,
       }) });
       await loadMemories(); toast("项目约定已保存，新任务可按项目标识召回。");
+    } catch (error) { toast(error.message, true); }
+  }
+  async function previewRecall() {
+    try {
+      if (!state.selectedId) throw new Error("请先选择同一项目标识下的任务。");
+      const result = await api(`/memory/${encodeURIComponent(memoryScope())}/recall`, {
+        method: "POST", body: JSON.stringify({ task_id: state.selectedId,
+          query: $("recall-query").value.trim() || null }),
+      });
+      const box = $("recall-result"); box.replaceChildren();
+      const retrieval = result.retrieval;
+      box.append(el("p", "", `检索：${retrieval?.used || "bm25"}${retrieval?.fallback ? "（向量不可用，已降级）" : ""} · 召回 ${result.selected.length} 条`));
+      for (const item of result.selected) box.append(el("p", "", `${item.key} v${item.version} · ${item.evidence_status} · ${item.use_policy}`));
+      for (const item of result.excluded) box.append(el("p", "", `排除 ${item.key} v${item.version}：${item.reason}`));
     } catch (error) { toast(error.message, true); }
   }
 
@@ -723,6 +746,7 @@
     $("generate-candidates").addEventListener("click", generateCandidates);
     for (const id of ["task-prompt", "expected-behavior", "candidate-json"]) $(id).addEventListener("input", () => { $("confirm-acceptance").checked = false; });
     $("memory-save").addEventListener("click", saveMemory);
+    $("recall-preview").addEventListener("click", previewRecall);
     $("memory-refresh").addEventListener("click", () => loadMemories().catch((error) => toast(error.message, true)));
     $("mode-demo").addEventListener("click", () => setMode("demo"));
     $("mode-real").addEventListener("click", () => setMode("real"));

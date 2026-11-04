@@ -1,0 +1,180 @@
+{
+  "date": "2026-11-04",
+  "platform": "Windows",
+  "backend": {
+    "tests": 146,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "new_backend_regressions": 18,
+  "browser_checks": 25,
+  "new_browser_checks": 3,
+  "ui_memory": {
+    "passed": true,
+    "checks": [
+      "project memory can be saved and listed in the workbench",
+      "editing memory creates a new revision",
+      "two independent tasks recall the same current project-memory revision",
+      "verified repair cards show observed edits and independent test provenance",
+      "recall preview explains lexical fallback without a prepared embedding model",
+      "invalidating memory excludes it from subsequent recall",
+      "recall preview exposes invalidation reasons instead of reusing old revisions",
+      "expanded memory controls fit a 390px mobile viewport",
+      "no uncaught browser errors"
+    ],
+    "errors": [],
+    "model": "deterministic_fixture",
+    "generation_quality_evaluated": false
+  },
+  "recovery": {
+    "upstream": "deepagents==0.7.32",
+    "model": "deterministic_fixture",
+    "scope": "engineering recovery only; no general coding or LLM-quality claim",
+    "passed": 5,
+    "total": 5,
+    "cases": [
+      {
+        "fault": "none",
+        "passed": true,
+        "worker_exit": 0,
+        "status": "succeeded",
+        "attempts": 1,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 0,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 2.845
+      },
+      {
+        "fault": "after_prepare",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 0,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 4.075
+      },
+      {
+        "fault": "after_effect",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 1,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 4.097
+      },
+      {
+        "fault": "after_journal",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 1,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 4.136
+      },
+      {
+        "fault": "after_graph",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 0,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 4.063
+      }
+    ]
+  },
+  "actual_embedding_smoke": {
+    "tasks": [
+      "700e4e71e0dd4c4d8cb3045c4ea88856",
+      "424eb20981ef429bb91509f9382fea2d"
+    ],
+    "statuses": [
+      "succeeded",
+      "succeeded"
+    ],
+    "embedding": "actual local BGE",
+    "model_decisions": "deterministic fixture",
+    "retrieval": {
+      "requested": "hybrid",
+      "used": "hybrid",
+      "fallback": null,
+      "eligible_count": 2,
+      "elapsed_ms": 1072.693
+    },
+    "experience_injected": true
+  },
+  "retrieval": {
+    "bm25/dev": {
+      "positive_count": 8,
+      "hit_count": 8,
+      "hit_at_3": 1.0,
+      "negative_count": 4,
+      "correct_rejection_count": 4,
+      "ranking_p50_ms": 0.521
+    },
+    "bm25/heldout": {
+      "positive_count": 8,
+      "hit_count": 5,
+      "hit_at_3": 0.625,
+      "negative_count": 4,
+      "correct_rejection_count": 4,
+      "ranking_p50_ms": 0.592
+    },
+    "dense/dev": {
+      "positive_count": 8,
+      "hit_count": 8,
+      "hit_at_3": 1.0,
+      "negative_count": 4,
+      "correct_rejection_count": 4,
+      "ranking_p50_ms": 0.5265
+    },
+    "dense/heldout": {
+      "positive_count": 8,
+      "hit_count": 4,
+      "hit_at_3": 0.5,
+      "negative_count": 4,
+      "correct_rejection_count": 4,
+      "ranking_p50_ms": 0.597
+    },
+    "hybrid/dev": {
+      "positive_count": 8,
+      "hit_count": 8,
+      "hit_at_3": 1.0,
+      "negative_count": 4,
+      "correct_rejection_count": 4,
+      "ranking_p50_ms": 0.5535000000000001
+    },
+    "hybrid/heldout": {
+      "positive_count": 8,
+      "hit_count": 6,
+      "hit_at_3": 0.75,
+      "negative_count": 4,
+      "correct_rejection_count": 4,
+      "ranking_p50_ms": 0.5465
+    }
+  },
+  "real_llm_quality_evaluated": false,
+  "limits": [
+    "Self-authored retrieval set: 8 notes / 24 queries; heldout 8 positives and 4 negatives.",
+    "Deterministic graph decisions; actual local BGE and supervised tests.",
+    "No repair-rate, billed-token or generalization improvement claim."
+  ]
+}

@@ -7,6 +7,8 @@ import re
 import time
 import uuid
 
+from .memory_search import LocalMemoryEncoder
+from .repair_memory import make_card
 from .store import Store, encode
 from .tools import digest, read_bytes, safe_path
 
@@ -28,16 +30,25 @@ def words(text: str) -> set[str]:
 
 
 class MemoryBank:
-    def __init__(self, store: Store):
+    def __init__(self, store: Store, *, encoder=None):
         self.store = store
+        self.encoder = encoder or LocalMemoryEncoder(store)
 
     @staticmethod
     def _decode(row):
-        return dict(row) | {"evidence": json.loads(row["evidence"])}
+        value = dict(row)
+        details = value.get("details")
+        return value | {
+            "evidence": json.loads(row["evidence"]),
+            "details": json.loads(details) if isinstance(details, str) else details,
+        }
 
     def list(self, scope, *, history=False):
         validate_scope(scope)
-        sql = "SELECT m.* FROM memories m WHERE m.scope=?"
+        sql = (
+            "SELECT m.*,d.details FROM memories m LEFT JOIN memory_details d "
+            "ON d.memory_id=m.id WHERE m.scope=?"
+        )
         if not history:
             sql += (
                 " AND NOT EXISTS (SELECT 1 FROM memories newer WHERE newer.scope=m.scope "
@@ -58,6 +69,7 @@ class MemoryBank:
         source_task=None,
         evidence=None,
         expires_in_seconds=None,
+        _details=None,
     ):
         validate_scope(scope)
         if not re.fullmatch(r"[A-Za-z0-9_.:/-]{1,100}", key):
@@ -120,9 +132,15 @@ class MemoryBank:
                     now + expires_in_seconds if expires_in_seconds else None,
                 ),
             )
+            if _details:
+                db.execute("INSERT INTO memory_details VALUES (?,?)", (memory_id, encode(_details)))
         with self.store.connect() as db:
             return self._decode(
-                db.execute("SELECT * FROM memories WHERE id=?", (memory_id,)).fetchone()
+                db.execute(
+                    "SELECT m.*,d.details FROM memories m LEFT JOIN memory_details d "
+                    "ON d.memory_id=m.id WHERE m.id=?",
+                    (memory_id,),
+                ).fetchone()
             )
 
     def retire(self, scope, key, *, expected_version, delete=False):
@@ -166,37 +184,18 @@ class MemoryBank:
                     )
                 ),
             )
+            if not delete:
+                db.execute(
+                    "INSERT INTO memory_details SELECT ?,details FROM memory_details "
+                    "WHERE memory_id=?",
+                    (value["id"], row["id"]),
+                )
         return self._decode(value)
 
-    def recall(self, scope, query, workspace, *, limit=3):
-        if not scope:
-            return {"scope": None, "selected": [], "excluded": []}
-        query_words = words(query)
-        selected, excluded = [], []
-        for item in self.list(scope):
-            reason = None
-            if item["status"] != "active":
-                reason = item["status"]
-            elif item["expires_at"] is not None and item["expires_at"] <= time.time():
-                reason = "expired"
-            else:
-                for path, expected in item["evidence"].items():
-                    try:
-                        matches = digest(read_bytes(safe_path(workspace, path))) == expected
-                    except (ValueError, OSError):
-                        matches = False
-                    if not matches:
-                        reason = "stale_for_workspace"
-                        break
-            overlap = len(query_words & words(item["key"] + " " + item["content"]))
-            if not reason and item["kind"] != "constraint" and not overlap:
-                reason = "irrelevant"
-            if reason:
-                excluded.append({"key": item["key"], "version": item["version"], "reason": reason})
-            else:
-                selected.append((item["kind"] == "constraint", overlap, item))
-        selected.sort(key=lambda pair: (-pair[0], -pair[1], pair[2]["key"]))
-        return {"scope": scope, "selected": [p[2] for p in selected[:limit]], "excluded": excluded}
+    def recall(self, scope, query, workspace, *, limit=3, mode="hybrid"):
+        from .memory_recall import recall
+
+        return recall(self, scope, query, workspace, limit=limit, mode=mode)
 
     def remember_success(self, task, workspace):
         """Persist only a compact, verifiable outcome, not model-generated claims."""
@@ -214,15 +213,17 @@ class MemoryBank:
         paths = sorted({json.loads(row["arguments"])["path"] for row in edits})
         if not paths:
             return
-        evidence = {p: digest(read_bytes(safe_path(workspace, p))) for p in paths}
+        card = make_card(self.store, task, workspace, paths)
+        if card is None:
+            return
+        content, evidence, details = card
         self.put(
             scope,
             key,
-            "Harness-verified repair of "
-            + ", ".join(paths)
-            + ". Original acceptance tests passed. Re-read files and re-test in new tasks.",
+            content,
             kind="experience",
             source_task=task["id"],
             evidence=evidence,
             expires_in_seconds=30 * 24 * 3600,
+            _details=details,
         )

@@ -21,12 +21,14 @@
 | 执行可视化 | 任务历史、执行时间线、源码差异、测试输出和持久事件 |
 | 子进程生命周期 | 独立监督进程、所有者管道与清理租约；Worker 退出后清理测试进程树 |
 | 故障验证 | 覆盖文件故障窗口、Agent 测试和最终验收运行时 Worker 退出 |
-| 跨任务项目记忆 | 显式 scope 隔离、结构化记录、版本 CAS、TTL、文件证据校验和失效/删除 |
+| 跨任务项目记忆 | scope 隔离、结构化修复经验、BM25 + 本地 BGE + RRF、版本 CAS、TTL 与撤销复核 |
 | 上下文预算与压缩 | 保留完整要求、事实快照与完整工具轮次，持久化模型输入视图，原始 Checkpoint 保留 |
 
 默认 `demo` 使用确定性模型，无需密钥即可体验完整工程流程；`openai` 模式通过兼容工具调用的接口执行真实模型任务。当前已验证演示模式与恢复机制，真实模型端到端修复效果尚未验证。
 
 2026-11-03 新增项目记忆与上下文管理：在工作台展开「项目记忆」，保存项目约定并填写相同项目标识，即可让不同任务召回当前有效版本。上下文预算默认启用，采用确定性事实摘要；估算预算不代表真实 Token 消耗。[完整设计、接口和保证边界](docs/MEMORY_CONTEXT.md)。
+
+2026-11-04 记忆增强：独立验收后生成包含需求、实际修改和验证依据的经验卡；区分当前文件事实和历史参考。可显式准备本地 BGE 模型，与 BM25 做 RRF 混合召回；未准备或失败时降级。页面可查看结构化经验和召回排除原因。[开启方法、实际检索评测及面试边界](docs/MEMORY_UPGRADE.md)。
 
 ## 快速开始
 
@@ -393,6 +395,7 @@ uv run harness run --workspace ./examples/calculator --prompt "修复 calculator
 | 方法与路径 | 用途 |
 |---|---|
 | GET /health | 服务与模型配置状态 |
+| GET /memory-status | 本地记忆检索策略及模型准备状态，不加载模型 |
 | POST /tasks/demo | 创建并调度演示任务，返回 202 |
 | POST /tasks | 提交 prompt、files 和可选 model_mode |
 | POST /projects/import | 提交 files 或 github_url，返回项目快照与发现的测试 |
@@ -404,7 +407,7 @@ uv run harness run --workspace ./examples/calculator --prompt "修复 calculator
 | PUT /memory/{scope} | 创建或带 expected_version 更新结构化记忆 |
 | POST /memory/{scope}/invalidate | 使当前版本失效 |
 | DELETE /memory/{scope}/{key} | 带 expected_version 删除，后续不再召回 |
-| POST /memory/{scope}/recall | 针对 task_id 预览召回及排除原因 |
+| POST /memory/{scope}/recall | 针对 task_id 预览召回、分数及排除原因，可传 query / mode / top_k |
 | GET /tasks | 查询任务列表 |
 | GET /tasks/{id} | 状态、结果、错误与执行指标 |
 | POST /tasks/{id}/resume | 恢复，可传 retry_uncertain_tests |
@@ -426,8 +429,8 @@ Invoke-RestMethod -Uri ("http://127.0.0.1:8000/tasks/" + $task.id)
 
 | 检查 | 结果 |
 |---|---|
-| 后端自动化测试 | 128 项通过，含本轮 37 项项目导入与验收回归 |
-| 前端浏览器检查 | 22 项通过，含本轮 5 项项目工作流检查 |
+| 后端自动化测试 | 146 项通过，含 37 项项目导入回归及本轮 18 项记忆增强回归 |
+| 前端浏览器检查 | 25 项通过，含本轮 3 项结构化经验与召回诊断检查 |
 | Worker 在测试运行时退出 | Agent 测试、独立验收两个实测场景通过，派生进程停止 |
 | 子进程恢复 | 正常对照与四类中断，共 5/5 场景通过 |
 | 示例文件写入尝试 | 每个场景均为 1 |

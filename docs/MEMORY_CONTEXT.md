@@ -2,6 +2,8 @@
 
 实现日期：2026-11-03（Asia/Shanghai）。本项目以一个 task / LangGraph thread 作为一次执行会话；跨会话记忆表示不同 task 在显式指定相同项目标识后共享记录，不是把同一 task 的 Checkpoint 改个名字。
 
+2026-11-04 更新：增加结构化修复经验、事实与经验的使用策略区分、BM25 + 本地 BGE + RRF，以及推理后版本复核；实现、开启方式和真实小样本评测见 [MEMORY_UPGRADE.md](MEMORY_UPGRADE.md)。下文上下文预算与恢复契约保持有效。
+
 ## 使用入口
 
 启动方式不变：`uv run harness serve --port 8000`。在工作台展开「项目记忆」，填写项目标识（例如 `calculator-project`），保存项目约定，再创建任务。项目标识留空时不读取其他任务的记忆。
@@ -19,7 +21,7 @@ uv run harness run --workspace examples/calculator --prompt "修复加法，保�
 
 ## 结构化长期记忆
 
-应用 SQLite 新增 `task_scopes`、`memories` 和 `context_views`，通过 `CREATE TABLE IF NOT EXISTS` 兼容原数据库。原任务、文件、工具日志与 Checkpoint 不迁移、不删除。
+应用 SQLite 使用 `task_scopes`、`memories`、`context_views`，本轮增加 `memory_details` 和 `memory_vectors`；通过 `CREATE TABLE IF NOT EXISTS` 兼容原数据库。原任务、文件、工具日志与 Checkpoint 不迁移、不删除。
 
 一条记忆包含：项目 scope、key、version、kind、content、status、source_task、文件 SHA256 evidence、创建时间、可选过期时间。内容修订保留历史；当前状态由同一 scope/key 的最大版本决定。
 
@@ -29,14 +31,14 @@ uv run harness run --workspace examples/calculator --prompt "修复加法，保�
 | fact | 用户通过 API 保存，可绑定源任务文件哈希 | 有依据的文件事实或用户备注；没有证据的备注不等于系统验证事实 |
 | experience | Harness 最终验收通过后自动生成，或引用成功源任务写入 | 记录修改过哪些文件和历史验收结果，不能替代新任务验收 |
 
-没有让 LLM 将自己的回答直接写成事实。自动经验由真实工具日志和服务层成功状态生成，不保存密钥或完整源码文本，默认 30 天过期。其他手工记录可指定 TTL；未指定时不会自动过期。
+没有让 LLM 将自己的回答直接写成事实。自动经验由需求、真实修改和独立验收证据生成，根因标注为未推断；保存经规则脱敏的有限差异片段，不保存完整源码，默认 30 天过期。脱敏为尽力规则，不能保证识别所有秘密格式。其他手工记录可指定 TTL；未指定时不会自动过期。
 
 ### 召回与失效
 
 1. 只查询任务绑定的 scope 的最新版本；默认最多 3 条。
 2. 排除 superseded、invalid、deleted、已过期记录。
-3. 带文件证据的条目，逐路径重新校验目标工作区的 SHA256。不同分支文件不匹配时标为 `stale_for_workspace`，不全局作废该记录。
-4. 普通事实/经验使用英文词项和中文二元字组匹配相关性；项目约定优先。第一版没有向量召回或长期记忆质量基准。
+3. 文件事实逐路径重新校验目标工作区的 SHA256，不匹配时标为 `stale_for_workspace`。新结构化修复经验在来源验收仍有效时可作为需重新验证的历史参考，不声称是当前文件事实；旧版记录保持严格策略。
+4. 使用 BM25，准备模型后结合本地 BGE 向量及 RRF；项目约定优先。推理后重新检查版本、TTL、证据，缓存不能授权失效记录复用。已有小样本检索评测，尚无真实模型长期任务收益基准。
 5. 上下文预算不足时丢弃整条低优先级记忆并记录 `context_budget`，不截断后冒充完整事实。
 
 更新、失效和删除使用 `BEGIN IMMEDIATE` 与 `expected_version`：并发写入只有持有最新版本的一方成功，其余返回 409，避免无提示覆盖。失效/删除都会创建新版本；更新已有 key 必须明确提交预期版本。

@@ -172,7 +172,17 @@ class ContextProjector:
             candidate = chosen + [
                 {
                     k: item[k]
-                    for k in ("id", "key", "version", "kind", "content", "source_task", "evidence")
+                    for k in (
+                        "id",
+                        "key",
+                        "version",
+                        "kind",
+                        "content",
+                        "source_task",
+                        "evidence",
+                        "use_policy",
+                        "evidence_status",
+                    )
                 }
             ]
             if (
