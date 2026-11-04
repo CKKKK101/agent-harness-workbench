@@ -70,6 +70,7 @@
     "task.created", "task.running", "task.succeeded", "task.failed", "task.interrupted", "task.blocked",
     "tool.prepared", "tool.completed", "tool.reused", "tool.input_error", "tool.retry_authorized",
     "model.completed", "verification.completed", "fault.injected", "execution.error",
+    "context.prepared", "context.applied",
   ];
   const DEMO_PROMPT = $("task-prompt").value;
   const state = {
@@ -78,6 +79,7 @@
     mode: "demo", realPrompt: "", tab: "diff", view: "workspace",
     uploads: new Map(), source: null, generation: 0, busy: false,
     toastTimer: null, polling: false, online: false,
+    memories: [], memoryScope: "", project: null, candidate: null, importGeneration: 0,
   };
 
   function toast(message, error = false) {
@@ -95,11 +97,12 @@
     return message;
   }
   async function api(path, options = {}) {
+    const { timeoutMs = 10000, ...fetchOptions } = options;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(path, {
-        ...options, signal: controller.signal,
+        ...fetchOptions, signal: controller.signal,
         headers: { "Content-Type": "application/json", ...options.headers },
       });
       const data = await response.json();
@@ -277,6 +280,9 @@
       : "可以从已保存的执行状态继续；已经记录的工具结果会被复用。";
   }
   function renderTests() {
+    const acceptance = state.task?.acceptance;
+    $("acceptance-origin").hidden = !acceptance;
+    $("acceptance-origin").textContent = acceptance ? (acceptance.origin === "repository_tests" ? "验收依据：项目已有测试" : "验收依据：用户确认的候选测试") + ` · ${acceptance.test_files.length} 个文件 · ${acceptance.framework}。通过表示该测试清单通过，不代表已证明所有需求。` : "";
     const { test } = getToolData();
     $("test-output").textContent = test?.result.output || "测试输出将在任务运行后显示。";
     $("test-summary").textContent = test ? `${test.result.tests_run} TESTS / ${test.result.verified ? "PASSED" : "NOT VERIFIED"}` : "等待测试执行";
@@ -296,7 +302,68 @@
     }
     $("events-list").scrollTop = previousScroll;
   }
-  function renderExecution() { renderTrace(); renderTests(); renderEvents(); }
+  function renderExecution() {
+    renderTrace(); renderTests(); renderEvents();
+    const prepared = state.events.filter((e) => e.kind === "context.prepared").at(-1);
+    const applied = state.events.filter((e) => e.kind === "context.applied").at(-1);
+    const info = $("context-info");
+    info.hidden = !prepared;
+    if (prepared) {
+      const refs = prepared.payload.memory_references || [];
+      const complete = applied?.payload.input_digest === prepared.payload.input_digest;
+      info.textContent = `${state.task?.model_mode === "demo" ? "演示模型" : "模型"}上下文${complete ? "已调用" : "已准备"} · ${prepared.payload.compressed ? "历史已整理，原始记录保留" : "保留完整历史"} · 项目记忆 ${refs.length} 条${refs.length ? `（${refs.map((r) => `${r.key} v${r.version}`).join("、")}）` : ""}`;
+    }
+  }
+
+  function memoryScope() {
+    const scope = $("memory-scope").value.trim();
+    if (!scope) throw new Error("请先填写项目标识。");
+    return scope;
+  }
+  async function loadMemories() {
+    const scope = memoryScope();
+    const memories = await api(`/memory/${encodeURIComponent(scope)}`);
+    state.memoryScope = scope; state.memories = memories;
+    const list = $("memory-list"); list.replaceChildren();
+    if (!memories.length) list.append(el("p", "memory-help", "这个项目还没有记忆。"));
+    for (const record of memories) {
+      const row = el("div", "memory-record");
+      row.append(el("strong", "", `${record.key} · v${record.version} · ${record.status}`));
+      row.append(el("p", "", record.content || "已删除，后续不再召回"));
+      if (record.status === "active") {
+        const edit = el("button", "text-button", "编辑");
+        edit.onclick = () => { $("memory-key").value = record.key; $("memory-content").value = record.content; };
+        const invalidate = el("button", "text-button", "标记失效");
+        invalidate.onclick = async () => {
+          try {
+            await api(`/memory/${encodeURIComponent(scope)}/invalidate`, { method: "POST",
+              body: JSON.stringify({ key: record.key, expected_version: record.version }) });
+            await loadMemories(); toast("记忆已失效，后续不再召回。");
+          } catch (error) { toast(error.message, true); }
+        };
+        const remove = el("button", "text-button", "删除");
+        remove.onclick = async () => {
+          try {
+            await api(`/memory/${encodeURIComponent(scope)}/${encodeURIComponent(record.key)}?expected_version=${record.version}`, { method: "DELETE" });
+            await loadMemories(); toast("记忆已删除，历史执行记录仍保留。");
+          } catch (error) { toast(error.message, true); }
+        };
+        const actions = el("div", "memory-actions"); actions.append(edit, invalidate, remove); row.append(actions);
+      }
+      list.append(row);
+    }
+  }
+  async function saveMemory() {
+    try {
+      const scope = memoryScope(), key = $("memory-key").value.trim(), content = $("memory-content").value.trim();
+      if (!key || !content) throw new Error("请填写记忆名称和项目约定。");
+      const previous = state.memoryScope === scope ? state.memories.find((m) => m.key === key) : null;
+      await api(`/memory/${encodeURIComponent(scope)}`, { method: "PUT", body: JSON.stringify({
+        key, content, kind: "constraint", expected_version: previous?.version ?? null,
+      }) });
+      await loadMemories(); toast("项目约定已保存，新任务可按项目标识召回。");
+    } catch (error) { toast(error.message, true); }
+  }
 
   function lines(text) {
     if (text === "" || text === null || text === undefined) return [];
@@ -464,10 +531,10 @@
     $("mode-demo").setAttribute("aria-pressed", String(demo)); $("mode-real").setAttribute("aria-pressed", String(!demo));
     $("task-prompt").readOnly = demo;
     $("task-prompt").value = demo ? DEMO_PROMPT : state.realPrompt;
-    $("task-prompt").placeholder = "描述需要修复的问题、预期行为与测试文件名…";
+    $("task-prompt").placeholder = "描述 Bug：什么输入、现在发生什么、预期是什么…";
     $("prompt-readonly").textContent = demo ? "预设示例" : "最多 8000 字";
-    $("prompt-hint").textContent = demo ? "代码修复 / Python" : "请注明要执行的 test_*.py 文件";
-    $("mode-explanation").lastElementChild.textContent = demo ? "无需密钥，体验完整的修复与验证流程。" : "使用已配置的模型，修复你上传的 Python 代码。";
+    $("prompt-hint").textContent = demo ? "代码修复 / Python" : "系统发现测试 · Harness 执行完整验收";
+    $("mode-explanation").lastElementChild.textContent = demo ? "无需密钥，体验完整的修复与验证流程。" : "选择项目，描述 Bug，系统读取源码并修复。";
     $("demo-files").hidden = !demo; $("real-files").hidden = demo;
     $("composer-footnote").lastChild.textContent = demo ? "固定演示流程 · 实际修改文件并运行测试" : "只运行可信代码 · 文件会复制到独立工作区";
     updateRunButton();
@@ -475,6 +542,7 @@
   function updateRunButton() {
     $("run-button").disabled = state.busy || !state.online;
     $("run-button-label").textContent = state.busy ? "正在提交任务…" : state.mode === "demo" ? "运行示例任务" : !state.health?.model_configured ? "配置模型后开始" : "开始修复任务";
+    for (const id of ["folder-input", "github-import", "generate-candidates", "file-input", "mode-demo", "mode-real"]) $(id).disabled = state.busy;
   }
   async function submitTask() {
     if (state.busy) return;
@@ -483,14 +551,32 @@
     if (state.mode === "real") {
       const prompt = $("task-prompt").value.trim();
       if (prompt.length < 5) { toast("请先描述要修复的问题。", true); $("task-prompt").focus(); return; }
-      if (!state.uploads.size) { toast("请上传业务代码与 test_*.py 单元测试文件。", true); return; }
-      if (![...state.uploads.keys()].some((name) => /^test_\w+\.py$/.test(name))) { toast("需要一个根目录的 test_*.py 单元测试文件。", true); return; }
-      payload = { prompt, files: Object.fromEntries(state.uploads), model_mode: "openai" };
+      if (state.project) {
+        payload = { project_id: state.project.id, prompt };
+        if (state.project.needs_acceptance) {
+          if (!$("confirm-acceptance").checked) { toast("请检查候选测试并勾选确认验收标准。", true); return; }
+          const expected = $("expected-behavior").value.trim();
+          if (expected.length < 5) { toast("请填写具体的预期行为。", true); return; }
+          try {
+            const files = JSON.parse($("candidate-json").value);
+            state.busy = true; updateRunButton();
+            // Persist the exact reviewed revision; never reuse approval after inputs change.
+            const candidate = await api(`/projects/${state.project.id}/candidate-tests`, {
+              method: "POST", body: JSON.stringify({ prompt, expected, files }),
+            });
+            payload = { ...payload, expected, candidate_id: candidate.id, confirm_acceptance: true };
+          } catch (error) { state.busy = false; updateRunButton(); toast(`候选测试无法确认：${error.message}`, true); return; }
+        }
+      } else {
+        if (!state.uploads.size) { toast("请选择项目文件夹、导入仓库或上传源码。", true); return; }
+        if (![...state.uploads.keys()].some((name) => /^(test_.+|.+_test)\.py$/.test(name))) { toast("没有测试时，请使用项目文件夹入口并确认候选测试。", true); return; }
+        payload = { prompt, files: Object.fromEntries(state.uploads), model_mode: "openai" };
+      }
     }
     state.busy = true; updateRunButton();
     try {
-      const task = await api(state.mode === "demo" ? "/tasks/demo" : "/tasks", {
-        method: "POST", body: JSON.stringify(payload || {}),
+      const task = await api(state.mode === "demo" ? "/tasks/demo" : payload.project_id ? "/tasks/from-project" : "/tasks", {
+        method: "POST", body: JSON.stringify({ ...(payload || {}), memory_scope: $("memory-scope").value.trim() || null }),
       });
       state.chosenFile = null; setTab("diff");
       await refreshTasks(); await selectTask(task.id);
@@ -499,6 +585,7 @@
     finally { state.busy = false; updateRunButton(); }
   }
   async function addFiles(files) {
+    if (state.busy) return;
     const pending = new Map(state.uploads);
     try {
       for (const file of files) {
@@ -509,9 +596,64 @@
       }
       if (pending.size > 30) throw new Error("一次最多上传 30 个文件。");
       if ([...pending.values()].reduce((n, text) => n + new TextEncoder().encode(text).length, 0) > 512000) throw new Error("上传文件总大小不能超过 512 KB。");
-      state.uploads = pending; renderUploads();
+      state.uploads = pending; clearProject(); renderUploads();
+      document.querySelector(".legacy-upload").open = true;
     } catch (error) { toast(error.message, true); }
     finally { $("file-input").value = ""; }
+  }
+  function clearProject() {
+    state.project = null; state.candidate = null;
+    $("project-preview").hidden = true; $("candidate-panel").hidden = true;
+    $("confirm-acceptance").checked = false; $("candidate-json").value = "";
+  }
+  async function importProject(payload) {
+    const generation = ++state.importGeneration;
+    state.busy = true; updateRunButton();
+    try {
+      const project = await api("/projects/import", { method: "POST", body: JSON.stringify(payload), timeoutMs: 45000 });
+      if (generation !== state.importGeneration) return;
+      clearProject(); state.project = project; state.uploads.clear(); renderUploads();
+      $("expected-behavior").value = "";
+      const preview = $("project-preview");
+      preview.replaceChildren(el("strong", "", project.label), el("p", "", `${project.files.length} 个文件 · ${project.test_files.length} 个测试文件 · ${project.framework}`));
+      const list = el("ul");
+      for (const path of project.test_files) list.append(el("li", "", path));
+      preview.append(list, el("p", "memory-help", project.needs_acceptance ? "未发现测试：请先定义预期行为并检查候选测试。" : "已有测试将被冻结为只读验收基线；最终运行全部测试文件。"));
+      preview.hidden = false; $("candidate-panel").hidden = !project.needs_acceptance;
+      toast("项目已导入。请描述需要修复的 Bug。");
+    } catch (error) { toast(error.message, true); }
+    finally { if (generation === state.importGeneration) { state.busy = false; updateRunButton(); } }
+  }
+  async function importFolder(files) {
+    try {
+      const selected = {};
+      for (const file of files) {
+        const relative = file.webkitRelativePath.split("/").slice(1).join("/");
+        if (!relative || relative.split("/").some((p) => [".git", ".venv", "venv", "node_modules", "__pycache__", ".pytest_cache", ".ruff_cache", "dist", "build", "artifacts", ".workbench"].includes(p) || p.startsWith(".env"))) continue;
+        if (!/\.py$|(^|\/)(pyproject\.toml|pytest\.ini|setup\.cfg|tox\.ini|README\.md|requirements[^/]*\.txt)$/.test(relative)) continue;
+        if (file.size > 256000) throw new Error(`${relative} 超过 256 KB。`);
+        selected[relative] = await file.text();
+        if (Object.keys(selected).length > 200) throw new Error("最多导入 200 个文件，请选择较小的项目目录。");
+      }
+      await importProject({ files: selected, label: files[0]?.webkitRelativePath.split("/")[0] || "Local project" });
+    } catch (error) { toast(error.message, true); }
+    finally { $("folder-input").value = ""; }
+  }
+  async function generateCandidates() {
+    if (!state.project || state.busy) return;
+    const prompt = $("task-prompt").value.trim(), expected = $("expected-behavior").value.trim();
+    if (prompt.length < 5 || expected.length < 5) { toast("请先填写 Bug 描述和预期行为。", true); return; }
+    state.busy = true; updateRunButton(); $("generate-candidates").disabled = true;
+    $("confirm-acceptance").checked = false;
+    try {
+      const candidate = await api(`/projects/${state.project.id}/candidate-tests`, {
+        method: "POST", body: JSON.stringify({ prompt, expected }), timeoutMs: 90000,
+      });
+      state.candidate = candidate;
+      $("candidate-json").value = JSON.stringify(candidate.files, null, 2);
+      toast("候选测试已生成。请逐项检查，不会自动开始修复。");
+    } catch (error) { toast(error.message, true); }
+    finally { state.busy = false; updateRunButton(); $("generate-candidates").disabled = false; }
   }
   function renderUploads() {
     $("uploaded-files").replaceChildren();
@@ -532,7 +674,7 @@
       ["运行示例任务", "选择「示例演示」，点击运行。无需密钥，系统会实际修复预设代码并执行测试。"],
       ["跟踪执行过程", "右侧展示源码读取、文件修改和测试验证。任务状态与执行记录会自动更新。"],
       ["检查代码与测试", "在下方切换代码差异、测试输出和执行事件，确认发生了哪些修改。"],
-      ["接入你自己的任务", "配置模型后切换到「真实模型」，上传可信的 Python 源码和 test_*.py 测试文件。"],
+      ["接入你自己的任务", "配置模型后切换到「真实模型」，选择项目文件夹或导入公开仓库并描述 Bug。系统发现已有测试；没有测试时先检查候选测试并确认验收标准。"],
     ].map(([title, copy], i) => {
       const row = el("div", "guide-step"), text = el("div");
       text.append(el("h3", "", title), el("p", "", copy));
@@ -576,6 +718,12 @@
       el("p", "dialog-copy", "选择「任务记录」查看全部任务；需要接入真实模型时，打开「模型连接」。"),
     ]));
     $("run-button").addEventListener("click", submitTask);
+    $("folder-input").addEventListener("change", (event) => importFolder([...event.target.files]));
+    $("github-import").addEventListener("click", () => !state.busy && importProject({ github_url: $("github-url").value.trim() }));
+    $("generate-candidates").addEventListener("click", generateCandidates);
+    for (const id of ["task-prompt", "expected-behavior", "candidate-json"]) $(id).addEventListener("input", () => { $("confirm-acceptance").checked = false; });
+    $("memory-save").addEventListener("click", saveMemory);
+    $("memory-refresh").addEventListener("click", () => loadMemories().catch((error) => toast(error.message, true)));
     $("mode-demo").addEventListener("click", () => setMode("demo"));
     $("mode-real").addEventListener("click", () => setMode("real"));
     $("guide-button").addEventListener("click", showGuide);

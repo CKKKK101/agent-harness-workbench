@@ -16,6 +16,7 @@ from pathlib import Path
 from .execution import run_supervised, wait_for_test_cleanup
 from .faults import FaultInjector, RecoveryConflict, UncertainExecution
 from .store import Store, encode
+from .test_manifest import framework, is_test, manifest, protected
 
 TOOL_NAMES = {"inspect_file", "replace_text", "run_tests"}
 MAX_FILE_BYTES = 256_000
@@ -135,7 +136,8 @@ class ToolRunner:
             elif current_hash == prepared["before_hash"]:
                 self.store.tool_started(self.task_id, call_id)
                 atomic_write(
-                    path, prepared["content"].encode("utf-8"),
+                    path,
+                    prepared["content"].encode("utf-8"),
                     expected_sha256=prepared["before_hash"],
                 )
                 self.faults.hit("after_effect")
@@ -162,15 +164,15 @@ class ToolRunner:
     def _prepare(self, name: str, args: dict) -> dict:
         if name == "run_tests":
             target = args["target"]
-            if not re.fullmatch(r"test_[A-Za-z0-9_]+\.py", target):
-                raise ValueError("target must be one test_*.py filename (no shell syntax)")
+            if not is_test(target):
+                raise ValueError("target must be one relative test_*.py or *_test.py path")
             safe_path(self.workspace, target).stat()
             return {"fingerprint": workspace_digest(self.workspace)}
         path = safe_path(self.workspace, args["path"])
         before = read_bytes(path)
         if name == "inspect_file":
             return {}
-        if path.name.startswith("test_") or path.name in {"conftest.py", "pytest.ini"}:
+        if protected(args["path"]):
             raise ValueError("Test fixtures are read-only; fix application code instead")
         if digest(before) != args["expected_sha256"]:
             raise ValueError("File changed since inspection; inspect it again before editing")
@@ -190,13 +192,10 @@ class ToolRunner:
     def acceptance(self, original: dict[str, str]) -> dict:
         """Harness-owned suite; the agent cannot choose its scope or cached call ID."""
         wait_for_test_cleanup(self.test_lease)
-        targets = sorted(
-            name for name in original
-            if Path(name).name.startswith("test_") and name.endswith(".py")
-        )
+        targets = manifest(original)
         if not targets:
             raise RecoveryConflict("No original test manifest; create a new task")
-        for target in targets:
+        for target in (name for name in original if protected(name)):
             path = safe_path(self.workspace, target)
             if not path.is_file() or read_bytes(path).decode("utf-8") != original[target]:
                 raise RecoveryConflict("Original acceptance tests changed; verification blocked")
@@ -215,32 +214,37 @@ class ToolRunner:
                 )
         else:
             self.store.prepare(
-                self.task_id, call_id, "harness_acceptance", args,
+                self.task_id,
+                call_id,
+                "harness_acceptance",
+                args,
                 {"fingerprint": workspace_digest(self.workspace)},
             )
         fingerprint = workspace_digest(self.workspace)
         self.store.tool_started(self.task_id, call_id)
-        command = [sys.executable, "-m", "harness_workbench.test_suite", *targets]
+        command = self._test_command(targets, original)
         result = self._run_tests(None, fingerprint, command=command) | {"targets": targets}
         self.store.tool_done(self.task_id, call_id, result)
         return result
 
     def _run_tests(self, target: str | None, fingerprint: str, *, command=None) -> dict:
-        command = command or [
-            sys.executable, "-I", "-m", "unittest", "discover", "-s", ".", "-p", target
-        ]
+        command = command or self._test_command([target], self.store.source_files(self.task_id))
         env = {
             k: v
             for k, v in os.environ.items()
             if k.upper() in {"SYSTEMROOT", "WINDIR", "PATH", "TEMP", "TMP", "LANG"}
         }
         env.update({"PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"})
+        env["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
         execution = run_supervised(command, self.workspace, env, self.timeout, self.test_lease)
         tail, size = execution["output"], execution["output_bytes"]
         after = workspace_digest(self.workspace)
         # Older unittest versions can exit 0 without tests: require a non-zero count.
         matched = re.search(r"Ran (\d+) tests?", tail)
         count = int(matched.group(1)) if matched else 0
+        summary = re.search(r"HARNESS_TEST_COUNT=(\d+)", tail)
+        if summary:
+            count = int(summary.group(1))
         return {
             "returncode": execution["returncode"],
             "timed_out": execution["timed_out"],
@@ -251,3 +255,13 @@ class ToolRunner:
             "inputs_unchanged": after == fingerprint,
             "verified": execution["returncode"] == 0 and count > 0 and after == fingerprint,
         }
+
+    @staticmethod
+    def _test_command(targets: list[str], original: dict[str, str]) -> list[str]:
+        return [
+            sys.executable,
+            "-I",
+            str(Path(__file__).with_name("test_suite.py")),
+            "--" + framework(original),
+            *("./" + target for target in targets),
+        ]

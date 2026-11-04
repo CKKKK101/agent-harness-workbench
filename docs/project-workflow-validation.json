@@ -1,0 +1,107 @@
+{
+  "date": "2026-11-04",
+  "platform": "Windows",
+  "python": "3.14.0",
+  "backend": {
+    "tests": 128,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "new_project_regressions": 37,
+  "ruff": "passed",
+  "browser": {
+    "total_checks": 22,
+    "new_project_checks": {
+      "checks": [
+        "local folder preserves tests/ paths and submits existing project without manual test upload",
+        "candidate generation stays a preview and cannot start repair without human confirmation",
+        "changing criteria or candidates clears approval; reviewed exact revision binds the submission",
+        "public repository control refreshes the preview and discards stale candidate approval",
+        "project controls fit mobile without horizontal overflow or uncaught JavaScript errors"
+      ],
+      "errors": [],
+      "model": "mocked",
+      "githubNetwork": "mocked"
+    }
+  },
+  "recovery": {
+    "upstream": "deepagents==0.7.32",
+    "model": "deterministic_fixture",
+    "scope": "engineering recovery only; no general coding or LLM-quality claim",
+    "passed": 5,
+    "total": 5,
+    "cases": [
+      {
+        "fault": "none",
+        "passed": true,
+        "worker_exit": 0,
+        "status": "succeeded",
+        "attempts": 1,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 0,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 3.017
+      },
+      {
+        "fault": "after_prepare",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 0,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 4.704
+      },
+      {
+        "fault": "after_effect",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 1,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 4.728
+      },
+      {
+        "fault": "after_journal",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 1,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 4.486
+      },
+      {
+        "fault": "after_graph",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 0,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 4.499
+      }
+    ]
+  },
+  "limits": [
+    "Deterministic model decisions and mocked GitHub downloads.",
+    "Real supervised test subprocesses; no real LLM quality evaluation.",
+    "Trusted small Python snapshots; no new Linux execution evidence."
+  ]
+}

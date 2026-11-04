@@ -20,6 +20,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="harness-ui-") as data:
         env = os.environ | {
             "WORKBENCH_DATA_DIR": data, "WORKBENCH_MODEL_MODE": "demo",
+            "WORKBENCH_CONTEXT_ENABLED": "true",
             "WORKBENCH_UI_URL": f"http://127.0.0.1:{port}",
         }
         with (artifacts / "ui-server.log").open("wb") as log:

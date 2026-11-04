@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 from .config import Settings
@@ -14,6 +15,8 @@ FAULT_POINTS = [
     "after_journal",
     "after_graph",
     "after_test_started",
+    "before_context_commit",
+    "after_context_commit",
 ]
 
 
@@ -32,6 +35,7 @@ def main():
     )
     demo = commands.add_parser("demo", help="Run the deterministic repair fixture")
     demo.add_argument("--fault", choices=FAULT_POINTS)
+    demo.add_argument("--memory-scope")
     resume = commands.add_parser("resume", help="Resume an interrupted or blocked task")
     resume.add_argument("task_id")
     resume.add_argument("--retry-uncertain-tests", action="store_true")
@@ -40,6 +44,7 @@ def main():
     run = commands.add_parser("run", help="Run trusted source files with a real model")
     run.add_argument("--workspace", type=Path, required=True)
     run.add_argument("--prompt", required=True)
+    run.add_argument("--memory-scope")
     commands.add_parser("evaluate", help="Kill worker subprocesses at 4 boundaries and resume")
     serve = commands.add_parser("serve")
     serve.add_argument("--port", type=int, default=8000)
@@ -49,12 +54,7 @@ def main():
     args = parser.parse_args()
     settings = Settings.from_env()
     if args.data_dir:
-        settings = Settings(
-            data_dir=args.data_dir.resolve(),
-            model_mode=settings.model_mode,
-            max_workers=settings.max_workers,
-            test_timeout=settings.test_timeout,
-        )
+        settings = replace(settings, data_dir=args.data_dir.resolve())
     if args.command == "reproduce":
         from .reproduce import reproduce_upstream
 
@@ -75,7 +75,7 @@ def main():
     service = TaskService(settings)
     try:
         if args.command == "demo":
-            task = service.create_demo(fault=args.fault)
+            task = service.create_demo(fault=args.fault, memory_scope=args.memory_scope)
             emit(service.run_sync(task["id"]))
         elif args.command == "resume":
             if service.get(args.task_id)["status"] in {"succeeded", "failed"}:
@@ -98,7 +98,9 @@ def main():
                 if path.is_symlink():
                     parser.error("Workspace symlinks are not supported")
                 files[path.relative_to(root).as_posix()] = path.read_text(encoding="utf-8")
-            task = service.create_task(args.prompt, files, mode="openai")
+            task = service.create_task(
+                args.prompt, files, mode="openai", memory_scope=args.memory_scope
+            )
             emit(service.run_sync(task["id"]))
     finally:
         service.close()

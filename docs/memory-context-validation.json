@@ -1,0 +1,298 @@
+{
+  "date": "2026-11-03",
+  "timezone": "Asia/Shanghai",
+  "platform": "Windows",
+  "kind": "local_contract_regression_not_independent_audit",
+  "pytest": {
+    "passed": 91,
+    "new_memory_context_cases": 36,
+    "new_cases": [
+      "tests.test_context::test_compression_retains_requirements_latest_turn_and_original_messages",
+      "tests.test_context::test_followup_user_constraints_survive_compression",
+      "tests.test_context::test_parallel_tool_turn_is_retained_as_an_indivisible_group",
+      "tests.test_context::test_invalid_tool_protocol_is_blocked[messages0]",
+      "tests.test_context::test_invalid_tool_protocol_is_blocked[messages1]",
+      "tests.test_context::test_invalid_tool_protocol_is_blocked[messages2]",
+      "tests.test_context::test_oversized_required_latest_turn_is_blocked_not_truncated",
+      "tests.test_context::test_system_prompt_tool_schema_and_output_reserve_count_toward_budget",
+      "tests.test_context::test_context_snapshot_is_atomic_and_reused_for_identical_sources",
+      "tests.test_context::test_context_commit_fault_recovery_never_uses_partial_view[before_context_commit-False]",
+      "tests.test_context::test_context_commit_fault_recovery_never_uses_partial_view[after_context_commit-True]",
+      "tests.test_context::test_actual_worker_exit_at_context_commit_boundary[before_context_commit-False]",
+      "tests.test_context::test_actual_worker_exit_at_context_commit_boundary[after_context_commit-True]",
+      "tests.test_context::test_corrupt_persisted_context_is_rejected[{}]",
+      "tests.test_context::test_corrupt_persisted_context_is_rejected[not-json]",
+      "tests.test_context::test_deleted_memory_is_not_reinjected_by_a_cached_context",
+      "tests.test_context::test_low_priority_memory_is_dropped_as_whole_records_when_budget_is_small",
+      "tests.test_context::test_key_facts_preserve_actual_journal_progress_and_uncertainty",
+      "tests.test_context::test_actual_graph_compacts_inputs_but_keeps_full_checkpoint_history",
+      "tests.test_memory::test_memory_survives_restart_and_is_injected_into_two_tasks",
+      "tests.test_memory::test_scope_and_unscoped_tasks_are_isolated",
+      "tests.test_memory::test_invalid_scope_is_rejected_before_task_creation[]",
+      "tests.test_memory::test_invalid_scope_is_rejected_before_task_creation[../repo]",
+      "tests.test_memory::test_invalid_scope_is_rejected_before_task_creation[a/b]",
+      "tests.test_memory::test_invalid_scope_is_rejected_before_task_creation[a:b]",
+      "tests.test_memory::test_invalid_scope_is_rejected_before_task_creation[with space]",
+      "tests.test_memory::test_update_is_versioned_and_stale_writer_cannot_overwrite",
+      "tests.test_memory::test_retired_latest_revision_never_resurrects_an_older_one[True]",
+      "tests.test_memory::test_retired_latest_revision_never_resurrects_an_older_one[False]",
+      "tests.test_memory::test_expired_memory_is_excluded",
+      "tests.test_memory::test_file_evidence_is_revalidated_for_each_workspace",
+      "tests.test_memory::test_wrong_source_scope_bad_hash_missing_file_and_unverified_experience_rejected",
+      "tests.test_memory::test_irrelevant_facts_are_not_recalled_but_scoped_constraints_are",
+      "tests.test_memory::test_concurrent_memory_writers_use_revision_cas",
+      "tests.test_memory::test_additive_schema_migration_preserves_old_tasks",
+      "tests.test_memory::test_memory_api_lifecycle_and_cross_scope_recall"
+    ]
+  },
+  "browser": {
+    "passed": 17,
+    "new_checks": [
+      "project memory can be saved and listed in the workbench",
+      "editing memory creates a new revision",
+      "two independent tasks recall the same current project-memory revision",
+      "invalidating memory excludes it from subsequent recall",
+      "expanded memory controls fit a 390px mobile viewport",
+      "no uncaught browser errors"
+    ],
+    "all_checks": [
+      "desktop shell loads and connects to the backend",
+      "create demo, complete four stages, and render real source diff",
+      "switch files, test output, and persisted execution events",
+      "search task history and open a persisted task",
+      "guide, real-model upload/remove controls, and missing-model setup",
+      "connection failure and retry without losing the page",
+      "390px responsive layout and mobile navigation",
+      "no uncaught browser JavaScript errors",
+      "resume_after_effect_with_delayed_event_history",
+      "Harness full-suite failure overrides Agent partial-test success in UI",
+      "Unknown Harness acceptance requires explicit retry through existing UI",
+      "project memory can be saved and listed in the workbench",
+      "editing memory creates a new revision",
+      "two independent tasks recall the same current project-memory revision",
+      "invalidating memory excludes it from subsequent recall",
+      "expanded memory controls fit a 390px mobile viewport",
+      "no uncaught browser errors"
+    ],
+    "uncaught_errors": []
+  },
+  "recovery": {
+    "upstream": "deepagents==0.7.32",
+    "model": "deterministic_fixture",
+    "scope": "engineering recovery only; no general coding or LLM-quality claim",
+    "passed": 5,
+    "total": 5,
+    "cases": [
+      {
+        "fault": "none",
+        "passed": true,
+        "worker_exit": 0,
+        "status": "succeeded",
+        "attempts": 1,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 0,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 2.738
+      },
+      {
+        "fault": "after_prepare",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 0,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 4.044
+      },
+      {
+        "fault": "after_effect",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 1,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 4.227
+      },
+      {
+        "fault": "after_journal",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 1,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 4.224
+      },
+      {
+        "fault": "after_graph",
+        "passed": true,
+        "worker_exit": 86,
+        "status": "succeeded",
+        "attempts": 2,
+        "tests_unchanged": true,
+        "tool_calls": 4,
+        "tool_execution_attempts": 4,
+        "reused_results": 0,
+        "file_write_attempts": 1,
+        "elapsed_seconds": 4.158
+      }
+    ]
+  },
+  "ruff": "passed",
+  "model": "deterministic_fixture_and_mock_http_transport",
+  "real_llm_quality_evaluated": false,
+  "billing_token_savings_measured": false,
+  "context_counter": "UTF-8 serialized bytes plus framing; not provider tokens",
+  "source_sha256": {
+    "scripts/test_ui_memory.mjs": "ea956f128f248605ec63574a4890f36ec6f2cce66d82ca953057316016a9df68",
+    "src/harness_workbench/__init__.py": "fe14f91de7b684891bd1019c547bda42b17d6b1a0f274102d1a7d6be4552744a",
+    "src/harness_workbench/agent.py": "5e7f39c3a5f6528ebfab1268b992a5382e50bf844a46ff565a72ab5ead1e66da",
+    "src/harness_workbench/api.py": "aaba8a83cc258ba5716b8bc049f2c724ec66c45c0d45d9181b1326f56557625c",
+    "src/harness_workbench/cli.py": "14d0daac848a143214c8371ec76a9145c12374ddd7273d62b32e8792e8da13a7",
+    "src/harness_workbench/config.py": "7b9224285bb9be862c76368ea8ca83ff9c88ca7c8c0e8013e158a84ef98b5f76",
+    "src/harness_workbench/context.py": "1bbdcb5882e78ecebf9031254d9e7e96be2d82d5d7d9c8043d76c1748e19b7e2",
+    "src/harness_workbench/evaluation.py": "a8d15458de9b2b0950c8e721884f3921527bc34e75a30935bbe01755c9d53084",
+    "src/harness_workbench/execution.py": "225d866d67cfad70b3691df8e4ba1f22923dfbf1e2ac3bdd5d700a8bfac3b0f2",
+    "src/harness_workbench/faults.py": "4a5ebcf7a9befb10a4694afcc0f323655a670e98b610a607ac435aa88517f92f",
+    "src/harness_workbench/fixtures.py": "1c1b75a48993b436c45843f4aa42c26710fcd8cc5bb829534065392aeb81ce22",
+    "src/harness_workbench/memory.py": "570c319e550919995268c8be3826cea4d1faed6ee9113162d427d55dd6842200",
+    "src/harness_workbench/models.py": "1dfedcce1beeccfeb93fd1da995d4ac1ba79f644ce8b3e85ab4c1dc2d7cbd9e2",
+    "src/harness_workbench/reproduce.py": "cc5561c626dabb991d985e559d3dafbeb76a81d3dad7fb066ef072f3dd081015",
+    "src/harness_workbench/service.py": "d557efd19053d2dff6104a382bf624b90afbdd64f8098e05423cd8860baf7302",
+    "src/harness_workbench/static/app.js": "d7fb75d3cf57de50eef08f778f43c63f53f56ce7ecfed97b8b2064ff70e17b0c",
+    "src/harness_workbench/static/favicon.svg": "61f141023396f7857e0137a8ce3370fc55fca6034dbc61ec8b32c715a121cc9a",
+    "src/harness_workbench/static/index.html": "02905079ec904a26195eed7c8edd63b62039ffbddd5f74722453236caf2413e7",
+    "src/harness_workbench/static/styles.css": "c08a5ba6020f6d31756f8519887301e0664f2f4aebdc9443f6c70a17ee34b478",
+    "src/harness_workbench/store.py": "1f4d37fd16378e68702a84ba04deb9a136a19b6156ba980e4ab490d0dfaea65b",
+    "src/harness_workbench/test_process.py": "6a4fbe0718a319a022c7a32f27254e3fc4caedbb288d46692bd800ec392632da",
+    "src/harness_workbench/test_suite.py": "e5fab51d804ec3afa5bdeeba00aa4244a04365c1303817b85be7132022ac593e",
+    "src/harness_workbench/tools.py": "3b340717fe3c5b68fabdece69384a53fbe2e8e7dc629a85b12fa1b782ff57376",
+    "tests/conftest.py": "50c1576f4388e8fcb9d2546a2fcaa8e10bc1604f3b7096d7e76d0798e627fba6",
+    "tests/test_api.py": "fda015fa1b44e388b0c4bcbe3a3e9d43d6aa7048a8f8e6668ea5eda2579ef596",
+    "tests/test_cleanup_contract.py": "01517ad6662ff1d32a238a7756d06044afa497cc37a7541381c467ccc6560831",
+    "tests/test_context.py": "d61c741fd667046cbf1da897c58bc1646a685a535a39852c7b9328c8599ea199",
+    "tests/test_graph.py": "7d9df4c038ff47c3f1306dc3424b62ffea730aee80b7af12eaa9846cf894695b",
+    "tests/test_journal.py": "456e8442fdbf6dedbd92417387074041432db1b56312b8e5c3063e9a1b2c8248",
+    "tests/test_memory.py": "d1b94ff38a9b286dad6421ef485a2771b4bbaca88f02616ef2391f1ff2cbe700",
+    "tests/test_model_adapter.py": "3cf44078034e98b86973574174a88e9c35cdffcbc6bcffb54940d449a8f92144",
+    "tests/test_process_lifecycle.py": "97fde93ea42fa1ed8e01d1a47a5ff3eefd5991843b93afba02b8cb397c60d355",
+    "tests/test_reliability.py": "49795858c4d78947193eaeff55605d923a59bee572dd52d3697f9b9802cf6cc3"
+  },
+  "limits": [
+    "No real Linux execution this round",
+    "Original checkpoints remain full",
+    "Memory deletion stops future direct recall; historical audit data remains",
+    "No global transaction across application SQLite and graph checkpoint",
+    "No guarantee of exactly-once model API calls or semantic summary completeness"
+  ],
+  "context_input_estimate": {
+    "fixture": "test_actual_graph_compacts_inputs_but_keeps_full_checkpoint_history",
+    "scope": "One deterministic repeated-read graph; same recorded inputs before/after projection",
+    "counter": "utf8_bytes_plus_framing_not_provider_tokens",
+    "model_calls": 12,
+    "compressed_calls": 8,
+    "cumulative_before_estimate": 204246,
+    "cumulative_after_estimate": 71365,
+    "estimated_reduction_percent": 65.06,
+    "real_provider_tokens_measured": false,
+    "real_model_quality_evaluated": false,
+    "calls": [
+      {
+        "input_digest": "f216cef3713811aeb29c04d3e9df5c2c208da673cac9f4c4a1fc4e9c4f43032a",
+        "compressed": false,
+        "before_estimated_tokens": 2366,
+        "after_estimated_tokens": 2366,
+        "input_limit": 11000
+      },
+      {
+        "input_digest": "85ef84dae985f4954d07d36a65d5d9ca35776003da41059e49018c038bf7104c",
+        "compressed": false,
+        "before_estimated_tokens": 5115,
+        "after_estimated_tokens": 5115,
+        "input_limit": 11000
+      },
+      {
+        "input_digest": "f029929710addddb7261239f35c0a0afccea0ba5d73dffbf7a423bcc7154c7d3",
+        "compressed": false,
+        "before_estimated_tokens": 7864,
+        "after_estimated_tokens": 7864,
+        "input_limit": 11000
+      },
+      {
+        "input_digest": "c729c39ec34c1112884e62a58d84fff9964a3355a26b5808bb5e9f8b5bace6f5",
+        "compressed": false,
+        "before_estimated_tokens": 10613,
+        "after_estimated_tokens": 10613,
+        "input_limit": 11000
+      },
+      {
+        "input_digest": "74311d6a55a2b1f9de733bbc232f172d7d0ba44581fced7e8628d1fcdd4a2f81",
+        "compressed": true,
+        "before_estimated_tokens": 13362,
+        "after_estimated_tokens": 6096,
+        "input_limit": 11000
+      },
+      {
+        "input_digest": "b84923003f60fc6d03eca864b0b60ed03e68e7dbaf379bbe3248d9656e3bb02c",
+        "compressed": true,
+        "before_estimated_tokens": 16111,
+        "after_estimated_tokens": 6096,
+        "input_limit": 11000
+      },
+      {
+        "input_digest": "0e96111aec58f8c4aa9715fd3f9a9e07c4f347e76a38f3310db43817fd162b7d",
+        "compressed": true,
+        "before_estimated_tokens": 18860,
+        "after_estimated_tokens": 6096,
+        "input_limit": 11000
+      },
+      {
+        "input_digest": "397cbb0764048a0fb83182758a989e35614e2c00ecc92b2d3af53272fd072203",
+        "compressed": true,
+        "before_estimated_tokens": 21609,
+        "after_estimated_tokens": 6096,
+        "input_limit": 11000
+      },
+      {
+        "input_digest": "696369b22da9763b0ed8af60c089dfcc6ca2737c7cf7f5dc27815c64f7ae6611",
+        "compressed": true,
+        "before_estimated_tokens": 24358,
+        "after_estimated_tokens": 6096,
+        "input_limit": 11000
+      },
+      {
+        "input_digest": "022aa454905f9c8387513d6c5d71ba9c7207e42e24dfaf61aaea6d3fe26f7f94",
+        "compressed": true,
+        "before_estimated_tokens": 27107,
+        "after_estimated_tokens": 6096,
+        "input_limit": 11000
+      },
+      {
+        "input_digest": "9398b544c81e3666e23cc209bc1ec5dff6eec68c623942d65664d8413114cc4f",
+        "compressed": true,
+        "before_estimated_tokens": 27963,
+        "after_estimated_tokens": 4229,
+        "input_limit": 11000
+      },
+      {
+        "input_digest": "1961b0dad0d1d02d1451f4d3c854df3efca26bee2572e9a034ab92e6099b8364",
+        "compressed": true,
+        "before_estimated_tokens": 28918,
+        "after_estimated_tokens": 4602,
+        "input_limit": 11000
+      }
+    ]
+  }
+}

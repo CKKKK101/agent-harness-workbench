@@ -2,7 +2,7 @@
 
 **支持中断恢复、工具执行追踪与测试验证的 Agent 代码修复工作台。**
 
-用户提交修复要求、Python 源码和测试文件，系统组织 Agent 完成“读取代码 → 修改文件 → 执行测试”，并在 Web 页面展示执行轨迹、代码差异和测试结果。项目围绕进程中断、重复工具调用、文件冲突和验证结果失效问题，实现任务持久化、工具执行日志、文件修改恢复协议与基于执行证据的完成判定。
+用户选择已有 Python 项目文件夹或导入公开 GitHub 仓库，描述 Bug；系统复制项目快照、发现已有测试，组织 Agent 读取源码并修复，由 Harness 独立执行完整验收清单。没有测试的项目先提出候选测试，经用户检查预期行为并明确确认后，才创建修复任务。Web 页面展示执行轨迹、代码差异、验收来源和测试结果。项目围绕进程中断、重复工具调用、文件冲突和验证结果失效问题，实现任务持久化、工具执行日志、文件修改恢复协议与基于执行证据的完成判定。
 
 ![Harness Studio 桌面界面](docs/screenshots/desktop.png)
 
@@ -10,7 +10,9 @@
 
 | 能力 | 实现方式 |
 |---|---|
-| 代码修复闭环 | 读取文件、精确替换、执行 unittest，将工具结果返回 Agent |
+| 项目导入与测试发现 | 文件夹或公开 GitHub 默认分支快照，保留目录，静态发现 unittest / pytest 测试 |
+| 无测试项目验收 | Agent 提出候选测试，用户检查预期行为及代码并确认，冻结为任务验收基线 |
+| 代码修复闭环 | 读取文件、精确替换、执行 unittest / pytest，将工具结果返回 Agent |
 | 任务中断恢复 | LangGraph Checkpoint 恢复图状态，工具日志核对实际操作 |
 | 文件修改恢复 | 修改前后 SHA256 对账，识别未执行、已生效与外部冲突 |
 | 重复调用防护 | 以 `(task_id, tool_call_id)` 关联调用，复用已保存的成功结果 |
@@ -19,8 +21,12 @@
 | 执行可视化 | 任务历史、执行时间线、源码差异、测试输出和持久事件 |
 | 子进程生命周期 | 独立监督进程、所有者管道与清理租约；Worker 退出后清理测试进程树 |
 | 故障验证 | 覆盖文件故障窗口、Agent 测试和最终验收运行时 Worker 退出 |
+| 跨任务项目记忆 | 显式 scope 隔离、结构化记录、版本 CAS、TTL、文件证据校验和失效/删除 |
+| 上下文预算与压缩 | 保留完整要求、事实快照与完整工具轮次，持久化模型输入视图，原始 Checkpoint 保留 |
 
 默认 `demo` 使用确定性模型，无需密钥即可体验完整工程流程；`openai` 模式通过兼容工具调用的接口执行真实模型任务。当前已验证演示模式与恢复机制，真实模型端到端修复效果尚未验证。
+
+2026-11-03 新增项目记忆与上下文管理：在工作台展开「项目记忆」，保存项目约定并填写相同项目标识，即可让不同任务召回当前有效版本。上下文预算默认启用，采用确定性事实摘要；估算预算不代表真实 Token 消耗。[完整设计、接口和保证边界](docs/MEMORY_CONTEXT.md)。
 
 ## 快速开始
 
@@ -46,6 +52,16 @@ uv run harness serve --port 8000
 uv run harness demo
 uv run harness status <任务id>
 ```
+
+### 修复自己的项目
+
+1. 配置模型并重启服务，切换「真实模型」。
+2. 点击「选择本地项目文件夹」，或输入 `https://github.com/owner/repo` 后导入公开仓库。系统展示发现的测试路径，不需要额外上传项目已有的 `tests/`。
+3. 描述 Bug，例如：“`add(2, 3)` 实际返回 -1，应该返回 5，请保持公开接口。”
+4. 已有测试时直接开始修复。没有测试时，填写具体预期行为，点击「生成候选测试」（需要模型）或手动填写候选测试 JSON；检查代码并勾选确认，再开始修复。改变要求或候选代码会取消确认。
+5. Agent 可以选部分测试调试，但任务成功由 Harness 运行全部基线测试决定。「测试输出」说明验收依据是项目已有测试还是用户确认的候选测试。
+
+导入和候选测试预览均不执行项目代码，不自动安装依赖；最终测试会执行可信项目代码，当前不是安全沙箱。依赖需预先装入运行 Harness 的 Python 环境。完整接口示例、导入范围和限制见 [项目工作流](docs/PROJECT_WORKFLOW.md)。
 
 演示模型按照固定逻辑选择工具，但经过实际 Deep Agents 执行图、应用工具中间件、SQLite Checkpoint 和真实文件/测试执行。它验证工程行为，不代表通用模型代码修复能力。
 
@@ -86,12 +102,14 @@ create_deep_agent(
     model=create_model(mode),
     system_prompt=SYSTEM_PROMPT,
     tools=[inspect_file, replace_text, run_tests],
-    middleware=[JournalMiddleware(runner)],
+    middleware=[BudgetContextMiddleware(runner, settings), JournalMiddleware(runner)],
     checkpointer=checkpointer,
 )
 ```
 
 当前通过工厂编译图，使用模型与工具之间的动态循环。读取、修改、测试是工具，不是三个手写的独立图节点。真实模型可以根据结果决定下一步；演示模型则为固定样例生成确定调用序列。
+
+`BudgetContextMiddleware` 以框架支持的同名替换方式接管默认摘要中间件，仅投影模型输入，不改写原始消息历史。`WORKBENCH_CONTEXT_ENABLED=false` 时不安装该应用中间件。
 
 ### 实际编译出的节点与边
 
@@ -145,7 +163,7 @@ tools
 |---|---|---|
 | `inspect_file` | `path` | 返回 UTF-8 内容和 SHA256 |
 | `replace_text` | `path, expected_sha256, old, new` | 校验版本，要求旧文本恰好出现一次，持久化后执行替换 |
-| `run_tests` | `target` | 接收根目录 test_*.py 文件名，返回退出码、测试数量、输出与指纹 |
+| `run_tests` | `target` | 接收相对 test_*.py / *_test.py 路径（含 tests/），返回退出码、测试数量、输出与指纹 |
 
 可修正的参数或路径错误返回 `recoverable_input_error`，让模型调整调用。恢复冲突与未知执行结果向外传播，将任务设为 `blocked`。
 
@@ -255,7 +273,8 @@ ToolMessage 返回图
 使用参数数组启动测试，不拼接 Shell 命令：
 
 ```text
-python -I -m unittest discover -s . -p test_calculator.py
+python -I <Harness安装路径>/test_suite.py --unittest ./test_calculator.py
+# pytest 项目使用 --pytest；最终验收传入所有冻结的测试文件
 ```
 
 默认超时 20 秒。独立监督进程先取得测试清理租约、收到 Worker 的启动授权，才放行测试。Worker 保持一条管道打开，Worker 退出产生 EOF 后，监督进程清理测试进程树，完成后释放租约。
@@ -272,13 +291,15 @@ Windows 使用 Job Object 管理测试及派生进程，内部启动入口在加
 uv run harness resume <任务id> --retry-uncertain-tests
 ```
 
-应用编辑工具拒绝修改 test_*.py、conftest.py、pytest.ini。路径约束是目录访问限制，**不是 OS 沙箱**；Python 测试本身仍有宿主进程权限，只运行可信源码与测试。
+应用编辑工具拒绝修改 test_*.py、*_test.py、conftest.py 以及 pytest.ini、pyproject.toml、setup.cfg、tox.ini；后四项整体只读，不能借此修改项目打包配置。路径约束是目录访问限制，**不是 OS 沙箱**；Python 测试本身仍有宿主进程权限，只运行可信源码与测试。
 
 ### 5. 基于证据的完成判定
 
 Agent 的 `run_tests` 可运行一个测试文件，为修复过程提供反馈。图结束后，`TaskService._finalize()` 运行独立最终验收，不再将 Agent 最近一次通过的部分测试直接作为成功依据。
 
-Harness 从 `source_files` 初始快照提取所有以 `test_` 开头、以 `.py` 结尾的文件作为固定清单，包括嵌套与隐藏目录。内部 `test_suite.py` 显式加载全部文件并组合 unittest 测试集，不依赖默认 discover 是否遍历隐藏目录。执行前核对原始测试内容，修改或删除测试会阻断；新生成的测试不能替代原始清单，也不自动扩大验收范围。
+Harness 从 `source_files` 初始快照提取所有 test_*.py / *_test.py 文件作为固定清单，包括嵌套与隐藏目录。按 AST 和 conftest 静态识别 unittest / pytest，内部 `test_suite.py` 显式执行全部文件，不依赖目录默认发现范围。pytest 清空项目 addopts，避免 `-k`、`--lf` 等配置缩小验收范围，禁用第三方插件自动加载；需要额外插件的项目可能无法运行。执行前核对原始测试和测试配置内容，修改或删除会阻断。
+
+没有已有测试时，确认前不创建任务、不执行候选测试。用户确认的具体测试版本和预期行为随任务保存，成为该任务的只读初始基线。后续 Agent 不能以自写测试替换原始清单。验收来源在 API 与页面中明确区分；用户确认不能把测试覆盖率或候选测试质量变成已证明的事实。
 
 验收使用内部 `harness_acceptance` 日志与预留调用 ID，不作为模型工具暴露。恢复时可复用验收结果，但仍核对清单和最终指纹；验收结果未知同样要求显式允许重试。API 与三个模型工具的参数格式保持不变；`metrics.tool_calls` 包含独立验收，因此默认示例现在是 4 次。
 
@@ -291,7 +312,7 @@ Harness 从 `source_files` 初始快照提取所有以 `test_` 开头、以 `.py
 
 模型回复“完成”不是唯一依据。工作区指纹包含普通隐藏文件和隐藏目录，仅排除明确缓存 `__pycache__`、`.pytest_cache`、`.ruff_cache` 与保留的 `.harness-write-*` 临时路径；应用工具同样禁止访问这些排除路径。文件查询采用相同缓存排除规则。
 
-修改隐藏配置也会使旧测试证据失效。验收证明的是原始 unittest 清单在当前状态下通过，不保证需求完全正确，也不能防止恶意测试伪造输出；当前仍要求代码可信。
+修改隐藏配置也会使旧测试证据失效。验收证明的是冻结的 unittest / pytest 清单在当前状态下通过，不保证需求完全正确，也不能防止恶意测试或 conftest 伪造输出、改变收集规则；当前仍要求代码可信。
 
 ### 6. 持久事件与源码快照
 
@@ -341,8 +362,12 @@ uv run harness status <任务id>
 | after_journal | 成功结果保存后、返回图前 | 复用持久结果 |
 | after_graph | 图结束后、应用完成验证前 | 补做完成验证 |
 | after_test_started | 记录测试开始后、启动子进程前 | 未知结果阻断与显式重试 |
+| before_context_commit | 模型输入视图事务提交前 | 没有半条视图，恢复后重建 |
+| after_context_commit | 模型输入视图提交后、调用模型前 | 相同输入校验并复用，记忆变化则重建 |
 
 `demo --fault` 使用模拟故障；`evaluate` 对前四个中断窗口使用独立 worker 与 `os._exit(86)`，验证实际进程退出。
+
+新增上下文的两个提交窗口另由 `tests/test_context.py` 使用真实进程退出验证，不混入上述 5 场景的原有评测口径。
 
 ## 接入真实模型
 
@@ -355,13 +380,13 @@ OPENAI_MODEL=支持工具调用的模型名
 OPENAI_BASE_URL=服务商的兼容接口地址
 ```
 
-openai 表示兼容接口模式，不限定服务商，具体兼容性需实际验证。健康接口仅返回配置状态与模型名称，不返回密钥。前端真实模型入口支持上传 Python 文件，需包含根目录 test_*.py unittest 文件。
+openai 表示兼容接口模式，不限定服务商，具体兼容性需实际验证。健康接口仅返回配置状态与模型名称，不返回密钥。前端支持项目文件夹、公开 GitHub 仓库，以及原有少量 Python 文件上传入口。
 
 ```powershell
 uv run harness run --workspace ./examples/calculator --prompt "修复 calculator.py 中 add 函数的错误，并运行 test_calculator.py 验证。"
 ```
 
-源文件复制后执行，不直接编辑原目录。当前任务允许 1–30 个 UTF-8 文件，总上传内容不超过 512000 字节，单文件上限 256000 字节。未实现任意仓库克隆、依赖自动安装、通用 Shell、联网搜索或容器运行环境。
+源文件复制后执行，不直接编辑原目录。原有 `/tasks` 文件上传仍允许 1–30 个 UTF-8 文件、总计 512000 字节；项目导入允许 1–200 个支持的文本文件、总计 2000000 字节；单文件上限 256000 字节。GitHub 只下载公开仓库默认分支 ZIP（最大 10 MB），不运行 git hooks、不支持私有仓库或指定分支。不自动安装依赖，没有通用 Shell、联网搜索或容器运行环境。
 
 ## API
 
@@ -370,6 +395,16 @@ uv run harness run --workspace ./examples/calculator --prompt "修复 calculator
 | GET /health | 服务与模型配置状态 |
 | POST /tasks/demo | 创建并调度演示任务，返回 202 |
 | POST /tasks | 提交 prompt、files 和可选 model_mode |
+| POST /projects/import | 提交 files 或 github_url，返回项目快照与发现的测试 |
+| GET /projects/{id} | 查看不可变导入预览 |
+| POST /projects/{id}/candidate-tests | 生成或手动登记候选测试，仍需用户确认 |
+| POST /tasks/from-project | 使用已有测试，或带确认的候选测试创建修复任务 |
+| GET /tasks/{id}/context | 上下文视图、事实快照、引用版本和估算预算 |
+| GET /memory/{scope} | 项目记忆最新版本，可用 history=true 查看历史 |
+| PUT /memory/{scope} | 创建或带 expected_version 更新结构化记忆 |
+| POST /memory/{scope}/invalidate | 使当前版本失效 |
+| DELETE /memory/{scope}/{key} | 带 expected_version 删除，后续不再召回 |
+| POST /memory/{scope}/recall | 针对 task_id 预览召回及排除原因 |
 | GET /tasks | 查询任务列表 |
 | GET /tasks/{id} | 状态、结果、错误与执行指标 |
 | POST /tasks/{id}/resume | 恢复，可传 retry_uncertain_tests |
@@ -387,12 +422,12 @@ Invoke-RestMethod -Uri ("http://127.0.0.1:8000/tasks/" + $task.id)
 
 ## 验证与评测
 
-历史验证与本轮 2026-10-29 回归见 [验证记录](docs/VALIDATION.md) 和 [可靠性契约](docs/RELIABILITY.md)。本轮结果：
+历史验证与本轮 2026-11-04 回归见 [验证记录](docs/VALIDATION.md)、[可靠性契约](docs/RELIABILITY.md)、[项目工作流](docs/PROJECT_WORKFLOW.md) 和 [记忆/上下文报告](docs/memory-context-validation.json)。本轮 Windows 本地结果：
 
 | 检查 | 结果 |
 |---|---|
-| 后端自动化测试 | 55 项通过，包含审查后累计 26 项新增回归 |
-| 前端浏览器检查 | 11 项通过，含完整验收失败展示和未知验收重试 |
+| 后端自动化测试 | 128 项通过，含本轮 37 项项目导入与验收回归 |
+| 前端浏览器检查 | 22 项通过，含本轮 5 项项目工作流检查 |
 | Worker 在测试运行时退出 | Agent 测试、独立验收两个实测场景通过，派生进程停止 |
 | 子进程恢复 | 正常对照与四类中断，共 5/5 场景通过 |
 | 示例文件写入尝试 | 每个场景均为 1 |
@@ -424,6 +459,8 @@ npm.cmd run test:ui
 ```text
 src/harness_workbench/
   agent.py        图组装、提示词、工具声明与 JournalMiddleware
+  context.py      Key Fact Snapshot、分层预算、输入投影与一致性校验
+  memory.py       跨任务项目记忆、版本 CAS、TTL 与证据校验
   models.py       确定性模型与真实模型适配
   service.py      任务调度、锁、Checkpoint 恢复与完成验证
   tools.py        工具日志、哈希对账、原子写入与独立验收

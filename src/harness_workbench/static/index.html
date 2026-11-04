@@ -8,8 +8,8 @@
   <meta name="description" content="提交代码修复任务，实时追踪每一步执行，检查代码差异与测试结果。">
   <title>Harness Studio · Agent 工作台</title>
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
-  <link rel="stylesheet" href="/assets/styles.css?v=2">
-  <script src="/assets/app.js?v=2" defer></script>
+  <link rel="stylesheet" href="/assets/styles.css?v=3">
+  <script src="/assets/app.js?v=3" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳转到主要内容</a>
@@ -60,7 +60,36 @@
             <label class="field-label" for="task-prompt">任务描述<span id="prompt-readonly">预设示例</span></label>
             <div class="prompt-wrapper"><textarea id="task-prompt" rows="5" maxlength="8000" readonly>修复 calculator.py 中的 add(a, b) 函数：当前错误地执行了减法。保留测试文件，运行 test_calculator.py 验证修复结果。</textarea><span class="prompt-footer"><span data-icon="terminal"></span><span id="prompt-hint">代码修复 / Python</span></span></div>
             <div id="demo-files"><div class="field-label">工作区文件<span>2 个文件</span></div><div class="fixture-file"><span class="file-icon python">Py</span><span>calculator.py<small>待修复的业务代码</small></span><span class="file-tag">SOURCE</span></div><div class="fixture-file"><span class="file-icon test" data-icon="flask"></span><span>test_calculator.py<small>3 条单元测试 · 只读</small></span><span class="file-tag">TEST</span></div></div>
-            <div id="real-files" hidden><label class="field-label" for="file-input">上传源码<span>最多 30 个文件</span></label><label class="upload-zone" for="file-input" id="upload-zone"><span data-icon="upload"></span><strong>点击选择或拖入 Python 文件</strong><span>包含根目录的 test_*.py 测试文件</span><input type="file" id="file-input" accept=".py" multiple></label><div id="uploaded-files" class="uploaded-files"></div></div>
+            <div id="real-files" hidden>
+              <label class="field-label" for="folder-input">选择已有项目<span>Python · 保留目录结构</span></label>
+              <label class="upload-zone" for="folder-input"><span data-icon="upload"></span><strong>选择本地项目文件夹</strong><span>自动发现 tests/ 中的 unittest / pytest 测试</span><input type="file" id="folder-input" webkitdirectory multiple></label>
+              <div class="project-github"><input id="github-url" type="url" placeholder="https://github.com/owner/repo" aria-label="公开 GitHub 仓库"><button class="button secondary" id="github-import">导入仓库</button></div>
+              <p class="memory-help">只复制 Python 源码和配置，不安装依赖。最多 200 个文件 / 2 MB；仅运行你信任的代码。</p>
+              <div id="project-preview" class="project-preview" hidden aria-live="polite"></div>
+              <div id="candidate-panel" class="candidate-panel" hidden>
+                <strong>没有发现测试，请先确认验收标准</strong>
+                <label class="field-label" for="expected-behavior">预期行为<span>具体输入与正确输出</span></label>
+                <textarea id="expected-behavior" rows="3" maxlength="8000" placeholder="例如：add(2, 3) 应返回 5；负数和零也应正确相加。"></textarea>
+                <button class="button secondary" id="generate-candidates">生成候选测试</button>
+                <label class="field-label" for="candidate-json">候选测试<span>JSON · 可手动填写或修改</span></label>
+                <textarea id="candidate-json" rows="8" spellcheck="false" placeholder='{"tests/test_behavior.py": "from calculator import add\ndef test_add():\n    assert add(2, 3) == 5\n"}'></textarea>
+                <label class="acceptance-confirm"><input type="checkbox" id="confirm-acceptance">我已检查测试代码，确认其符合上述预期行为，并同意执行。</label>
+                <p class="memory-help">模型提出的测试不会自动成为正确性证明。确认后，Harness 才使用这些测试验收修复。</p>
+              </div>
+              <details class="legacy-upload"><summary>或上传少量单独文件（原入口）</summary><label class="field-label" for="file-input">上传源码<span>最多 30 个文件</span></label><label class="upload-zone" for="file-input" id="upload-zone"><span data-icon="upload"></span><strong>点击选择或拖入 Python 文件</strong><span>包含 test_*.py 或 *_test.py 测试文件</span><input type="file" id="file-input" accept=".py" multiple></label><div id="uploaded-files" class="uploaded-files"></div></details>
+            </div>
+            <details class="memory-settings" id="memory-settings">
+              <summary>项目记忆 <span>可选 · 跨任务复用</span></summary>
+              <label class="field-label" for="memory-scope">项目标识<span>留空则不召回记忆</span></label>
+              <input id="memory-scope" maxlength="80" placeholder="例如 calculator-project" autocomplete="off">
+              <p class="memory-help">相同项目标识共享记忆。新任务要求优先，旧记录不能替代本次测试验收。</p>
+              <label class="field-label" for="memory-key">记忆名称</label>
+              <input id="memory-key" maxlength="100" placeholder="例如 coding-style" autocomplete="off">
+              <label class="field-label" for="memory-content">项目约定</label>
+              <textarea id="memory-content" rows="2" maxlength="2000" placeholder="例如：保留公开函数名称，使用类型注解。"></textarea>
+              <div class="memory-actions"><button class="button secondary" id="memory-save">保存约定</button><button class="text-button" id="memory-refresh">查看记忆</button></div>
+              <div id="memory-list" class="memory-list" aria-live="polite"></div>
+            </details>
             <div class="workflow-hint"><span class="workflow-node" data-icon="search"></span><span>读取</span><i></i><span class="workflow-node" data-icon="code"></span><span>修复</span><i></i><span class="workflow-node" data-icon="check"></span><span>验证</span></div>
             <button class="button primary run-button" id="run-button"><span data-icon="play"></span><span id="run-button-label">运行示例任务</span><span class="button-arrow" data-icon="arrow-right"></span></button>
             <p class="composer-footnote" id="composer-footnote"><span data-icon="shield"></span>固定演示流程 · 实际修改文件并运行测试</p>
@@ -70,6 +99,7 @@
         <section class="panel execution-panel" aria-labelledby="execution-heading">
           <div class="panel-heading"><div class="section-icon" data-icon="route"></div><h2 id="execution-heading">执行轨迹</h2><span class="status-badge neutral" id="execution-status">等待任务</span></div>
           <div class="execution-meta"><span class="mono" id="task-id-label">尚未选择任务</span><span id="task-time-label">—</span><button class="text-button" id="copy-task-id" hidden aria-label="复制任务编号"><span data-icon="copy"></span></button></div>
+          <p id="context-info" class="context-info" hidden></p>
           <div class="trace-list" id="trace-list"></div>
           <div class="execution-bottom"><span class="live-label" id="live-label"><i class="small-dot"></i><span>执行记录将显示在这里</span></span><button class="text-button" id="show-events">查看执行事件<span data-icon="arrow-right"></span></button></div>
           <div class="result-banner" id="result-banner" hidden></div>
@@ -79,7 +109,7 @@
         <section class="panel inspector-panel" aria-label="任务执行详情">
           <div class="inspector-toolbar"><div class="inspector-tabs" role="tablist" aria-label="执行详情"><button class="inspector-tab selected" id="tab-diff" role="tab" aria-selected="true" aria-controls="content-diff" data-tab="diff"><span data-icon="git-diff"></span>代码差异<span id="changed-count" class="tab-count">0</span></button><button class="inspector-tab" id="tab-tests" role="tab" aria-selected="false" aria-controls="content-tests" data-tab="tests"><span data-icon="terminal"></span>测试输出</button><button class="inspector-tab" id="tab-events" role="tab" aria-selected="false" aria-controls="content-events" data-tab="events"><span data-icon="list"></span>执行事件<span id="event-count" class="tab-count">0</span></button></div><div class="inspector-actions"><button class="icon-button" id="copy-file" title="复制当前文件" aria-label="复制当前文件" disabled><span data-icon="copy"></span></button><button class="icon-button" id="download-file" title="下载当前文件" aria-label="下载当前文件" disabled><span data-icon="download"></span></button></div></div>
           <div id="content-diff" class="tab-content" role="tabpanel" aria-labelledby="tab-diff"><div class="file-toolbar"><select id="file-select" aria-label="选择文件"><option>尚无任务文件</option></select><span class="diff-summary" id="diff-summary">运行任务后查看修改</span></div><div id="code-view" class="code-view"><div class="inspector-empty"><span data-icon="git-diff"></span><strong>每一处修改，都清晰可见</strong><p>运行一个任务，在这里检查源码差异。</p></div></div></div>
-          <div id="content-tests" class="tab-content" role="tabpanel" aria-labelledby="tab-tests" hidden><div class="terminal-heading"><span><i class="small-dot"></i>UNITTEST OUTPUT</span><span id="test-summary">等待测试执行</span></div><pre id="test-output" class="test-output">测试输出将在任务运行后显示。</pre></div>
+          <div id="content-tests" class="tab-content" role="tabpanel" aria-labelledby="tab-tests" hidden><div class="terminal-heading"><span><i class="small-dot"></i>TEST OUTPUT</span><span id="test-summary">等待测试执行</span></div><p id="acceptance-origin" class="memory-help" hidden></p><pre id="test-output" class="test-output">测试输出将在任务运行后显示。</pre></div>
           <div id="content-events" class="tab-content" role="tabpanel" aria-labelledby="tab-events" hidden><div id="events-list" class="events-list"><div class="inspector-empty"><span data-icon="list"></span><strong>尚无执行事件</strong><p>任务事件会在执行时自动更新。</p></div></div></div>
         </section>
       </div>

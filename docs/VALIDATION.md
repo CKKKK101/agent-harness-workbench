@@ -1,6 +1,26 @@
 # 本地验证记录
 
-最新复审补充验证：**55 项 pytest、11 项浏览器检查、5/5 恢复评测通过**。此前 49 项为第一轮修复结果；本次新增 6 项清理与监督协议回归。详见 [REVIEW.md](REVIEW.md) 和 [review-report.json](review-report.json)。Linux 作业已配置，等待远端实际执行，不将 Windows 模拟检查视为 Linux 已验证。
+## 2026-11-04：项目导入与候选测试确认
+
+Windows 本地全量 **128 项 pytest 通过**（原有 91 项加本轮 37 项）、**22 项浏览器检查通过**（原有 17 项加本轮 5 项）、原有子进程恢复评测 **5/5 通过**，Ruff 通过。全量测试继续覆盖 Worker 在 Agent 测试与最终验收实际运行时退出、清理测试进程树及未知结果阻断。
+
+新增覆盖静态导入不执行代码、嵌套测试及 src 布局、pytest / unittest 完整验收、部分通过与完整失败、全部跳过不得成功、测试配置只读、归档路径与大小限制、候选预览不创建任务、人工确认门槛、输入变化使候选过期、用户修订版本冻结、模型失败和新 API。浏览器执行真实文件夹上传与后台导入，检查已有测试自动发现、候选展示和确认、修改后取消确认及移动端；模型候选和 GitHub 网络使用 Mock，浏览器提交拦截以避免真实模型执行。后端通过确定性模型驱动真实图与测试子进程验证完整任务。
+
+设计与限制见 [PROJECT_WORKFLOW.md](PROJECT_WORKFLOW.md)，机器可读记录见 [project-workflow-validation.json](project-workflow-validation.json)。没有测量真实模型修复率、候选测试充分性或公开 GitHub 仓库总体兼容性。只支持文档所列的小型可信 Python 快照；依赖、数据文件、插件和 Linux 实测边界没有扩大。
+
+本次 pytest JUnit 输出附带 13 条既有 LangSmith 弃用提示及 2 条 pytest 报告格式提示；测试无失败。原始结果位于忽略目录 `artifacts/project-workflow-junit.xml`，UI 结果及截图位于 `artifacts/ui-projects*` / `artifacts/ui-candidates*`。
+
+## 2026-11-03：项目记忆与上下文管理
+
+Windows 本地全量 **91 项 pytest 通过**（本轮新增 36 项）、**17 项浏览器检查通过**（原有 11 项加新增 6 项）、原有子进程恢复评测 **5/5 通过**。原进程生命周期、完整验收和冲突保护回归继续通过。
+
+新增覆盖跨任务重启召回、scope 隔离、版本 CAS 并发冲突、TTL、文件证据变化、失效和删除后的缓存重建、工具轮次完整性、必要上下文超预算阻断、快照损坏，以及压缩提交前后真实 `os._exit(86)`。实际图集成检查确认压缩输入与完整 Checkpoint 历史可以共存。浏览器检查含两次不同任务的真实记忆注入记录和移动端。
+
+详细设计见 [MEMORY_CONTEXT.md](MEMORY_CONTEXT.md)，机器可读记录见 [memory-context-validation.json](memory-context-validation.json)。这些验证使用确定性模型及 HTTP Mock，不是长期记忆语义质量、真实模型修复率或 Token 成本评测。本机仍未执行真实 Linux 分支；原 13 条 LangSmith 弃用提示仍存在。
+
+## 2026-10-29：上轮复审快照
+
+上轮复审补充验证：**55 项 pytest、11 项浏览器检查、5/5 恢复评测通过**。此前 49 项为第一轮修复结果；当时新增 6 项清理与监督协议回归。详见 [REVIEW.md](REVIEW.md) 和 [review-report.json](review-report.json)。Linux 作业已配置，等待远端实际执行，不将 Windows 模拟检查视为 Linux 已验证。
 
 ## 2026-10-29：可靠性审查修复后的验证
 

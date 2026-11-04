@@ -160,6 +160,18 @@
   .run-button > [data-icon]:first-child { margin-right: auto; }
   .composer-footnote { display: flex; align-items: center; justify-content: center; gap: 5px; text-align: center; color: #a8b3b5; font-size: 8px; margin-top: 12px; line-height: 1.7; }
   .composer-footnote svg { width: 10px; height: 10px; }
+  .memory-settings { margin-top: 16px; padding: 13px; border: 1px solid #e2e9e9; border-radius: 10px; min-width: 0; grid-column: 1 / -1; }
+  .memory-settings summary { cursor: pointer; font-size: 12px; color: #345e59; font-weight: 600; }
+  .memory-settings summary span { font-size: 10px; color: #8a9b9b; font-weight: 400; }
+  .memory-settings .field-label { margin-top: 13px; }
+  .memory-settings input, .memory-settings textarea { width: 100%; padding: 9px; border: 1px solid #dce6e4; border-radius: 6px; background: #fbfdfc; font-size: 12px; color: #385450; }
+  .memory-settings textarea { min-height: 75px; }
+  .memory-help { font-size: 10px; line-height: 1.7; color: #7b908c; margin: 8px 0; }
+  .memory-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 9px; }
+  .memory-list { max-height: 230px; overflow-y: auto; }
+  .memory-record { margin-top: 12px; padding-top: 10px; border-top: 1px solid #e6edeb; font-size: 11px; overflow-wrap: anywhere; }
+  .memory-record p { color: #728781; margin-top: 5px; line-height: 1.6; }
+  .context-info { margin: 8px 23px 0; padding: 9px 11px; border-radius: 7px; background: #f0f6f2; color: #547969; font-size: 10px; line-height: 1.7; overflow-wrap: anywhere; }
   .upload-zone { border: 1px dashed #cbdcd4; background: #f9fcfa; padding: 17px 8px; border-radius: 6px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; }
   .upload-zone > [data-icon] { color: #81a693; margin-bottom: 8px; }
   .upload-zone strong { font-weight: 500; color: #6f8b7d; font-size: 10px; }
@@ -428,3 +440,17 @@
     *, *::before, *::after { animation: none !important; transition: none !important; }
   }
 }
+/* Project snapshots and explicit acceptance review. */
+.project-github { display: flex; gap: 8px; margin-top: 12px; }
+.project-github input { min-width: 0; flex: 1; padding: 10px; border: 1px solid #dde3ec; border-radius: 8px; background: #fff; font: inherit; font-size: 12px; }
+.project-github .button { flex: 0 0 auto; padding: 10px; }
+.project-preview, .candidate-panel { margin: 14px 0; padding: 14px; border: 1px solid #dce6f3; border-radius: 10px; background: #f5f8fd; font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.project-preview p { margin: 5px 0; }
+.project-preview ul { margin: 8px 0; padding-left: 18px; max-height: 130px; overflow: auto; }
+.candidate-panel { background: #fffcf5; border-color: #f0dfb9; }
+.candidate-panel textarea { display: block; width: 100%; box-sizing: border-box; border: 1px solid #ddd8cc; border-radius: 8px; padding: 10px; font: inherit; font-size: 12px; resize: vertical; margin-bottom: 12px; }
+#candidate-json { font-family: Consolas, monospace; font-size: 11px; }
+.acceptance-confirm { display: flex; gap: 8px; align-items: flex-start; }
+.acceptance-confirm input { margin-top: 5px; flex: 0 0 auto; }
+.legacy-upload { margin-top: 14px; font-size: 12px; color: #64748b; }
+.legacy-upload summary { cursor: pointer; margin-bottom: 12px; }

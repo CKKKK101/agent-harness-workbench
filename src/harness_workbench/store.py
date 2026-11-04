@@ -45,6 +45,25 @@ class Store:
                     task_id TEXT NOT NULL, path TEXT NOT NULL, content TEXT NOT NULL,
                     PRIMARY KEY (task_id, path)
                 );
+                CREATE TABLE IF NOT EXISTS task_scopes (
+                    task_id TEXT PRIMARY KEY, scope TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS task_acceptance (
+                    task_id TEXT PRIMARY KEY, metadata TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS memories (
+                    id TEXT PRIMARY KEY, scope TEXT NOT NULL, key TEXT NOT NULL,
+                    version INTEGER NOT NULL, kind TEXT NOT NULL, content TEXT NOT NULL,
+                    status TEXT NOT NULL, source_task TEXT, evidence TEXT NOT NULL,
+                    created_at REAL NOT NULL, expires_at REAL,
+                    UNIQUE(scope,key,version)
+                );
+                CREATE INDEX IF NOT EXISTS memories_scope ON memories(scope,key,version);
+                CREATE TABLE IF NOT EXISTS context_views (
+                    task_id TEXT NOT NULL, input_digest TEXT NOT NULL, checksum TEXT NOT NULL,
+                    payload TEXT NOT NULL, created_at REAL NOT NULL,
+                    PRIMARY KEY(task_id,input_digest)
+                );
             """)
 
     @contextmanager
@@ -60,7 +79,15 @@ class Store:
             db.close()
 
     def create_task(
-        self, task_id: str, prompt: str, mode: str, workspace: Path, fault=None, files=None
+        self,
+        task_id: str,
+        prompt: str,
+        mode: str,
+        workspace: Path,
+        fault=None,
+        files=None,
+        memory_scope: str | None = None,
+        acceptance: dict | None = None,
     ):
         now = time.time()
         with self.connect() as db:
@@ -73,7 +100,20 @@ class Store:
                 "INSERT INTO source_files(task_id,path,content) VALUES(?,?,?)",
                 [(task_id, name, content) for name, content in (files or {}).items()],
             )
+            if memory_scope:
+                db.execute("INSERT INTO task_scopes VALUES (?,?)", (task_id, memory_scope))
+            if acceptance:
+                db.execute(
+                    "INSERT INTO task_acceptance VALUES (?,?)", (task_id, encode(acceptance))
+                )
         self.event(task_id, "task.created", {"model_mode": mode})
+
+    def acceptance(self, task_id: str) -> dict | None:
+        with self.connect() as db:
+            row = db.execute(
+                "SELECT metadata FROM task_acceptance WHERE task_id=?", (task_id,)
+            ).fetchone()
+        return json.loads(row["metadata"]) if row else None
 
     def source_files(self, task_id: str) -> dict[str, str]:
         with self.connect() as db:
@@ -87,7 +127,11 @@ class Store:
 
     def task(self, task_id: str) -> dict:
         with self.connect() as db:
-            row = db.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
+            row = db.execute(
+                "SELECT tasks.*,task_scopes.scope AS memory_scope FROM tasks "
+                "LEFT JOIN task_scopes ON tasks.id=task_scopes.task_id WHERE tasks.id=?",
+                (task_id,),
+            ).fetchone()
         if row is None:
             raise KeyError(task_id)
         return dict(row)

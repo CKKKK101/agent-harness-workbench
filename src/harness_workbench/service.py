@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import logging
+import sqlite3
 import threading
 import uuid
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -14,8 +16,11 @@ from .config import Settings
 from .execution import wait_for_test_cleanup
 from .faults import FaultInjector, InjectedCrash, RecoveryConflict, UncertainExecution
 from .fixtures import DEMO_PROMPT, demo_files
+from .memory import MemoryBank, validate_scope
 from .models import create_model
+from .projects import MAX_PROJECT_BYTES, MAX_PROJECT_FILES, ProjectImports
 from .store import Store
+from .test_manifest import manifest
 from .tools import MAX_FILE_BYTES, ToolRunner, excluded_path, safe_path, workspace_digest
 
 TERMINAL = {"succeeded", "failed", "blocked", "interrupted"}
@@ -30,6 +35,8 @@ class TaskService:
         self.settings = settings
         settings.data_dir.mkdir(parents=True, exist_ok=True)
         self.store = Store(settings.data_dir / "application.sqlite")
+        self.memory = MemoryBank(self.store)
+        self.projects = ProjectImports(self.store)
         self.pool = ThreadPoolExecutor(
             max_workers=settings.max_workers, thread_name_prefix="harness"
         )
@@ -63,14 +70,20 @@ class TaskService:
         *,
         mode: str | None = None,
         fault: str | None = None,
+        memory_scope: str | None = None,
+        acceptance: dict | None = None,
     ) -> dict:
+        validate_scope(memory_scope)
         mode = mode or self.settings.model_mode
-        if not 1 <= len(files) <= 30:
-            raise ValueError("Provide between 1 and 30 UTF-8 source/test files")
-        if sum(len(s.encode("utf-8")) for s in files.values()) > 512_000:
-            raise ValueError("Workspace upload exceeds 512 KB")
-        if not any(Path(name).name.startswith("test_") for name in files):
-            raise ValueError("Provide at least one test_*.py unittest fixture")
+        limit = MAX_PROJECT_FILES if acceptance else 30
+        if not 1 <= len(files) <= limit:
+            raise ValueError(f"Provide between 1 and {limit} UTF-8 source/test files")
+        if sum(len(s.encode("utf-8")) for s in files.values()) > (
+            MAX_PROJECT_BYTES if acceptance else 512_000
+        ):
+            raise ValueError("Workspace upload exceeds its size limit")
+        if not manifest(files):
+            raise ValueError("Provide at least one test_*.py or *_test.py test file")
         # Validate paths before creating anything. API clients cannot select host directories.
         root = self.settings.data_dir / "workspaces" / uuid.uuid4().hex
         for name, content in files.items():
@@ -89,11 +102,37 @@ class TaskService:
             path.write_text(content, encoding="utf-8", newline="")
         task_id = uuid.uuid4().hex
         full_prompt = prompt + "\nWorkspace files: " + ", ".join(sorted(files))
-        self.store.create_task(task_id, full_prompt, mode, root, fault=fault, files=files)
+        if acceptance:
+            full_prompt += (
+                "\nAcceptance origin: "
+                + acceptance["origin"]
+                + "\nExpected behavior: "
+                + acceptance["expected_behavior"]
+                + "\nRead-only acceptance files: "
+                + ", ".join(acceptance["test_files"])
+            )
+        self.store.create_task(
+            task_id,
+            full_prompt,
+            mode,
+            root,
+            fault=fault,
+            files=files,
+            memory_scope=memory_scope,
+            acceptance=acceptance,
+        )
         return self.get(task_id)
 
-    def create_demo(self, *, fault: str | None = None) -> dict:
-        return self.create_task(DEMO_PROMPT, demo_files(), mode="demo", fault=fault)
+    def create_from_project(self, project_id: str, prompt: str, *, memory_scope=None, **review):
+        files, acceptance = self.projects.task_inputs(project_id, prompt, **review)
+        return self.create_task(
+            prompt, files, mode="openai", memory_scope=memory_scope, acceptance=acceptance
+        )
+
+    def create_demo(self, *, fault: str | None = None, memory_scope: str | None = None) -> dict:
+        return self.create_task(
+            DEMO_PROMPT, demo_files(), mode="demo", fault=fault, memory_scope=memory_scope
+        )
 
     def get(self, task_id: str) -> dict:
         task = self.store.task(task_id)
@@ -111,8 +150,10 @@ class TaskService:
                 "error",
                 "created_at",
                 "updated_at",
+                "memory_scope",
             )
         } | {
+            "acceptance": self.store.acceptance(task_id),
             "metrics": {
                 "tool_calls": len(calls),
                 "tool_execution_attempts": sum(row["executions"] for row in calls),
@@ -120,7 +161,7 @@ class TaskService:
                 "file_write_attempts": sum(
                     row["executions"] for row in calls if row["name"] == "replace_text"
                 ),
-            }
+            },
         }
 
     def schedule(self, task_id: str, *, retry_uncertain_tests: bool = False) -> Future:
@@ -187,7 +228,7 @@ class TaskService:
             wait_for_test_cleanup(runner.test_lease)
             db_path = str(self.settings.data_dir / "checkpoints" / f"{task_id}.sqlite")
             with SqliteSaver.from_conn_string(db_path) as checkpointer:
-                agent = build_agent(task["model_mode"], runner, checkpointer)
+                agent = build_agent(task["model_mode"], runner, checkpointer, self.settings)
                 snapshot = agent.get_state(config)
                 if snapshot.values and not snapshot.next:
                     # The graph finished before the application status committed.
@@ -221,16 +262,38 @@ class TaskService:
         last = result["messages"][-1]
         content = last.content
         answer = content if isinstance(content, str) else json.dumps(content, ensure_ascii=False)
-        self.store.event(task_id, "verification.completed", {
-            "verified": bool(verified), "scope": "original_test_manifest_v1",
-            "evidence": evidence,
-        })
+        self.store.event(
+            task_id,
+            "verification.completed",
+            {
+                "verified": bool(verified),
+                "scope": "original_test_manifest_v1",
+                "acceptance": self.store.acceptance(task_id),
+                "evidence": evidence,
+            },
+        )
         self.store.set_status(
             task_id,
             "succeeded" if verified else "failed",
             result=answer,
             error=None if verified else "Harness acceptance suite failed or evidence became stale",
         )
+        if verified and self.settings.context_enabled:
+            # Optional memory must not turn an already verified task into failure.
+            try:
+                self.memory.remember_success(self.store.task(task_id), workspace)
+            except (ValueError, OSError, sqlite3.Error):
+                logging.getLogger(__name__).warning(
+                    "Post-success memory write skipped", exc_info=True
+                )
+
+    def context_views(self, task_id):
+        with self.store.connect() as db:
+            rows = db.execute(
+                "SELECT payload,checksum FROM context_views WHERE task_id=? ORDER BY created_at",
+                (task_id,),
+            ).fetchall()
+        return [json.loads(row["payload"]) | {"checksum": row["checksum"]} for row in rows]
 
     def files(self, task_id: str) -> dict[str, str]:
         root = Path(self.store.task(task_id)["workspace"])
@@ -239,9 +302,7 @@ class TaskService:
                 root, p.relative_to(root).as_posix()
             ).read_text(encoding="utf-8")
             for p in sorted(root.rglob("*"))
-            if p.is_file()
-            and not p.is_symlink()
-            and not excluded_path(p.relative_to(root))
+            if p.is_file() and not p.is_symlink() and not excluded_path(p.relative_to(root))
         }
 
     def close(self):
